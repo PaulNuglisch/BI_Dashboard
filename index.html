@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retail BI Sales Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ── Reset & base ────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0f2d5e;
+    --navy-dark: #091e42;
+    --blue: #1e6fd9;
+    --blue-light: #3d8ef5;
+    --accent: #00b4d8;
+    --bg: #f0f4fa;
+    --card: #ffffff;
+    --text: #1a2035;
+    --muted: #6b7a99;
+    --border: #dde4f0;
+    --sidebar-w: 230px;
+    --green: #27ae60;
+    --orange: #e67e22;
+    --red: #e74c3c;
+    --purple: #8e44ad;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--navy);
+    position: fixed;
+    top: 0; left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+  .sidebar-logo {
+    padding: 28px 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo .brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+  }
+  .sidebar-logo .sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .sidebar-logo .icon-wrap {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 10px;
+    font-size: 18px;
+  }
+  .sidebar-nav { padding: 16px 0; flex: 1; }
+  .nav-section-label {
+    padding: 10px 20px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 20px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    transition: all 0.18s;
+    border-left: 3px solid transparent;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: #fff; background: rgba(255,255,255,0.07); }
+  .nav-item.active {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    border-left-color: var(--accent);
+  }
+  .nav-item .nav-icon { font-size: 16px; width: 18px; text-align: center; }
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.6;
+  }
+
+  /* ── Main content ────────────────────────────────── */
+  #main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-height: 100vh;
+  }
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+  .topbar-badge {
+    background: var(--blue-light);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .content { padding: 28px 32px; }
+
+  /* ── Section titles ───────────────────────────────── */
+  .section { margin-bottom: 48px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff;
+  }
+  .section-title { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .section-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Business problem card ───────────────────────── */
+  .problem-card {
+    background: linear-gradient(135deg, var(--navy) 0%, #1a4080 100%);
+    border-radius: 16px;
+    padding: 32px 36px;
+    color: #fff;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .problem-card::after {
+    content: "";
+    position: absolute; right: -40px; top: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .problem-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+  .problem-card p { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.85); max-width: 720px; }
+  .problem-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .tag {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+  }
+
+  /* ── KPI cards ───────────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(15,45,94,0.07);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(15,45,94,0.12);
+  }
+  .kpi-accent {
+    position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+    border-radius: 14px 0 0 14px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.1;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .kpi-icon {
+    position: absolute;
+    right: 14px; top: 14px;
+    font-size: 22px;
+    opacity: 0.15;
+  }
+
+  /* ── Filter bar ──────────────────────────────────── */
+  .filter-bar {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(15,45,94,0.05);
+  }
+  .filter-bar label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 4px;
+    display: block;
+  }
+  .filter-group { display: flex; flex-direction: column; }
+  .filter-bar select {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 30px 7px 10px;
+    font-size: 13px;
+    color: var(--text);
+    background: #fff;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    min-width: 150px;
+  }
+  .filter-bar select:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(30,111,217,0.1);
+  }
+  .filter-reset {
+    margin-left: auto;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    align-self: flex-end;
+  }
+  .filter-reset:hover { background: var(--blue); }
+
+  /* ── Charts grid ─────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(15,45,94,0.06);
+  }
+  .chart-card.full-width { grid-column: 1 / -1; }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .chart-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .chart-container { position: relative; height: 280px; }
+  .chart-container.tall { height: 320px; }
+  .scatter-toggle {
+    display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
+  }
+  .scatter-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #fff;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .scatter-btn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  /* ── Regression section ──────────────────────────── */
+  .reg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .reg-eq-card {
+    background: linear-gradient(135deg, #0f2d5e 0%, #1e4080 100%);
+    border-radius: 14px;
+    padding: 24px;
+    color: #fff;
+  }
+  .reg-eq-card h3 { font-size: 14px; font-weight: 600; opacity: 0.7; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .reg-equation {
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    color: #e8f0fe;
+  }
+  .reg-equation span { color: var(--accent); font-weight: 700; }
+  .reg-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .reg-metric {
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .reg-metric-label { font-size: 11px; opacity: 0.6; margin-bottom: 4px; }
+  .reg-metric-val { font-size: 20px; font-weight: 700; }
+  .coeff-table-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(15,45,94,0.06);
+  }
+  .coeff-table-card h3 { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { border-bottom: 2px solid var(--border); }
+  th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8faff; }
+  .coeff-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .coeff-bar { height: 6px; border-radius: 3px; min-width: 4px; }
+  .positive { background: var(--green); }
+  .negative { background: var(--red); }
+  .sign-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .sign-pos { background: #e8f8f0; color: var(--green); }
+  .sign-neg { background: #fde8e8; color: var(--red); }
+
+  /* ── Predictor tool ──────────────────────────────── */
+  .predictor-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(15,45,94,0.06);
+    margin-bottom: 20px;
+  }
+  .predictor-card h3 { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .predictor-card p { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+  .predictor-inputs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .input-group label { font-size: 12px; font-weight: 600; color: var(--navy); display: block; margin-bottom: 5px; }
+  .input-group input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .input-group input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30,111,217,0.1); }
+  .predict-btn {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .predict-btn:hover { background: var(--blue-light); }
+  .prediction-result {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
+    border-radius: 10px;
+    border: 1.5px solid #bfdbfe;
+    display: none;
+  }
+  .prediction-result.show { display: block; }
+  .prediction-result .pred-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .prediction-result .pred-val { font-size: 28px; font-weight: 700; color: var(--blue); }
+
+  /* ── Insights section ───────────────────────────── */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .insight-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(15,45,94,0.06);
+  }
+  .insight-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .insight-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .insight-title { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+  .insight-body { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  .insight-body strong { color: var(--text); }
+
+  /* ── Data summary row ──────────────────────────────── */
+  .data-info {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .data-pill {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .data-pill strong { color: var(--navy); }
+
+  /* ── Responsive ─────────────────────────────────── */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .charts-grid, .reg-grid { grid-template-columns: 1fr; }
+    .insights-grid { grid-template-columns: repeat(2, 1fr); }
+    .predictor-inputs { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    #sidebar { width: 60px; }
+    .sidebar-logo .brand, .sidebar-logo .sub, .nav-item span, .sidebar-footer { display: none; }
+    #main { margin-left: 60px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .insights-grid { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
+
+  /* ── Insight panel additions ─────────────────────── */
+  .verify-banner {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fcd34d;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 22px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .verify-banner .vb-icon { font-size: 22px; flex-shrink: 0; line-height: 1.5; }
+  .verify-banner .vb-text { font-size: 13px; color: #78350f; line-height: 1.65; }
+  .verify-banner .vb-text strong { color: #92400e; font-weight: 700; }
+  .verify-banner .vb-text code {
+    font-family: "Courier New", monospace;
+    font-size: 11.5px;
+    background: rgba(0,0,0,0.07);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .dir-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 9px; letter-spacing: 0.3px;
+  }
+  .dir-pos  { background: #dcfce7; color: #15803d; }
+  .dir-neg  { background: #fee2e2; color: #b91c1c; }
+  .dir-na   { background: #f1f5f9; color: #475569; }
+  .coeff-chip {
+    font-family: "Courier New", monospace;
+    font-size: 11.5px;
+    background: #f1f5f9;
+    color: #1e3a5f;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+  .insight-body .caution {
+    display: block;
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: #92400e;
+    background: #fffbeb;
+    border-left: 3px solid #fcd34d;
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+    line-height: 1.55;
+  }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c8d4ea; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon-wrap">&#128200;</div>
+    <div class="brand">Retail BI Sales</div>
+    <div class="sub">Analytics Platform</div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+    <a class="nav-item active" href="#overview" onclick="setActive(this)">
+      <span class="nav-icon">&#127968;</span>
+      <span>Overview</span>
+    </a>
+    <a class="nav-item" href="#analytics" onclick="setActive(this)">
+      <span class="nav-icon">&#128202;</span>
+      <span>Sales Analytics</span>
+    </a>
+    <a class="nav-item" href="#scatter" onclick="setActive(this)">
+      <span class="nav-icon">&#127919;</span>
+      <span>Marketing Impact</span>
+    </a>
+    <a class="nav-item" href="#forecast" onclick="setActive(this)">
+      <span class="nav-icon">&#128200;</span>
+      <span>Regression Forecast</span>
+    </a>
+    <a class="nav-item" href="#insights" onclick="setActive(this)">
+      <span class="nav-icon">&#128161;</span>
+      <span>Business Insights</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    Retail BI Sales &bull; 2025<br>
+    365 orders &bull; 5 regions
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════ -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title">&#128200; Retail Business Intelligence Dashboard</div>
+    <div class="topbar-badge">365 Orders &nbsp;|&nbsp; Jan–Dec 2025</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── OVERVIEW ─────────────────────────────── -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div class="section-icon">&#127968;</div>
+        <div>
+          <div class="section-title">Overview</div>
+          <div class="section-desc">Business problem, dataset summary, and key performance indicators</div>
+        </div>
+      </div>
+
+      <div class="problem-card">
+        <h2>&#128269; Business Problem</h2>
+        <p>
+          A multi-regional retail company wants to understand the key drivers of revenue and profitability
+          across its five operating regions (North, South, East, West, Central). Despite growing marketing
+          spend across five channels — including Paid Ads, Social Media, Email, Marketplace, and Organic
+          Search — revenue growth has been inconsistent month-over-month and across product categories.
+          Management needs a data-driven view of which segments, channels, and product categories generate
+          the most value, and whether advertising investment and website traffic are effectively converting
+          into revenue. A linear regression model is applied to quantify these relationships and support
+          forward-looking revenue forecasting.
+        </p>
+        <div class="problem-tags">
+          <span class="tag">&#128204; Multi-Regional Retail</span>
+          <span class="tag">&#128181; Revenue Optimization</span>
+          <span class="tag">&#127919; Marketing Attribution</span>
+          <span class="tag">&#128200; Predictive Modeling</span>
+          <span class="tag">&#128101; Customer Segmentation</span>
+          <span class="tag">&#128717; Product Analytics</span>
+        </div>
+      </div>
+
+      <div class="data-info">
+        <div class="data-pill">&#128197; <strong>Period:</strong>&nbsp;Jan – Dec 2025</div>
+        <div class="data-pill">&#128203; <strong>Records:</strong>&nbsp;365 orders</div>
+        <div class="data-pill">&#127757; <strong>Regions:</strong>&nbsp;5 (N, S, E, W, Central)</div>
+        <div class="data-pill">&#128717; <strong>Categories:</strong>&nbsp;5 product types</div>
+        <div class="data-pill">&#127919; <strong>Channels:</strong>&nbsp;5 marketing channels</div>
+        <div class="data-pill">&#128101; <strong>Segments:</strong>&nbsp;3 customer types</div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--blue);"></div>
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-value">$66,853</div>
+          <div class="kpi-sub">Full-year 2025</div>
+          <div class="kpi-icon">&#128178;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--green);"></div>
+          <div class="kpi-label">Total Profit</div>
+          <div class="kpi-value">$9,618</div>
+          <div class="kpi-sub">14.4% profit margin</div>
+          <div class="kpi-icon">&#128200;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--orange);"></div>
+          <div class="kpi-label">Units Sold</div>
+          <div class="kpi-value">764</div>
+          <div class="kpi-sub">Across all categories</div>
+          <div class="kpi-icon">&#128717;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--purple);"></div>
+          <div class="kpi-label">Avg Discount Rate</div>
+          <div class="kpi-value">8.2%</div>
+          <div class="kpi-sub">Per order average</div>
+          <div class="kpi-icon">&#127991;</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-accent" style="background:var(--accent);"></div>
+          <div class="kpi-label">Avg Customer Rating</div>
+          <div class="kpi-value">4.39 &#9733;</div>
+          <div class="kpi-sub">Out of 5.0</div>
+          <div class="kpi-icon">&#11088;</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SALES ANALYTICS ────────────────────────── -->
+    <section class="section" id="analytics">
+      <div class="section-header">
+        <div class="section-icon">&#128202;</div>
+        <div>
+          <div class="section-title">Sales Analytics</div>
+          <div class="section-desc">Filter charts by Region, Customer Segment, Marketing Channel, and Product Category</div>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="f-region">Region</label>
+          <select id="f-region" onchange="applyFilters()">
+            <option value="">All Regions</option>
+            <option>North</option>
+            <option>South</option>
+            <option>East</option>
+            <option>West</option>
+            <option>Central</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="f-segment">Customer Segment</label>
+          <select id="f-segment" onchange="applyFilters()">
+            <option value="">All Segments</option>
+            <option>New Customer</option>
+            <option>Returning Customer</option>
+            <option>Business Account</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="f-channel">Marketing Channel</label>
+          <select id="f-channel" onchange="applyFilters()">
+            <option value="">All Channels</option>
+            <option>Email</option>
+            <option>Marketplace</option>
+            <option>Organic Search</option>
+            <option>Paid Ads</option>
+            <option>Social Media</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="f-category">Product Category</label>
+          <select id="f-category" onchange="applyFilters()">
+            <option value="">All Categories</option>
+            <option>Beauty</option>
+            <option>Electronics</option>
+            <option>Fashion</option>
+            <option>Home &amp; Kitchen</option>
+            <option>Sports</option>
+          </select>
+        </div>
+        <button class="filter-reset" onclick="resetFilters()">&#8635; Reset Filters</button>
+      </div>
+
+      <div class="charts-grid">
+        <!-- Monthly Revenue -->
+        <div class="chart-card">
+          <div class="chart-title">Monthly Revenue</div>
+          <div class="chart-subtitle">Total revenue per month (filtered)</div>
+          <div class="chart-container">
+            <canvas id="chartMonthly"></canvas>
+          </div>
+        </div>
+
+        <!-- Revenue by Category -->
+        <div class="chart-card">
+          <div class="chart-title">Revenue by Product Category</div>
+          <div class="chart-subtitle">Contribution of each product line (filtered)</div>
+          <div class="chart-container">
+            <canvas id="chartCategory"></canvas>
+          </div>
+        </div>
+
+        <!-- Profit by Region -->
+        <div class="chart-card">
+          <div class="chart-title">Profit by Region</div>
+          <div class="chart-subtitle">Total profit generated per operating region (filtered)</div>
+          <div class="chart-container">
+            <canvas id="chartRegion"></canvas>
+          </div>
+        </div>
+
+        <!-- Revenue by Channel -->
+        <div class="chart-card">
+          <div class="chart-title">Revenue by Marketing Channel</div>
+          <div class="chart-subtitle">Revenue attributed to each acquisition channel (filtered)</div>
+          <div class="chart-container">
+            <canvas id="chartChannel"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MARKETING IMPACT / SCATTER ────────────── -->
+    <section class="section" id="scatter">
+      <div class="section-header">
+        <div class="section-icon">&#127919;</div>
+        <div>
+          <div class="section-title">Marketing Impact on Revenue</div>
+          <div class="section-desc">Relationship between Ad Spend / Website Visits and Revenue</div>
+        </div>
+      </div>
+
+      <div class="chart-card full-width" style="margin-bottom:20px;">
+        <div class="chart-title">Ad Spend &amp; Website Visits vs. Revenue</div>
+        <div class="chart-subtitle">Each point represents one order. Toggle between marketing inputs.</div>
+        <div class="scatter-toggle">
+          <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:4px;">X-Axis:</span>
+          <button class="scatter-btn active" id="btn-ad" onclick="switchScatter('ad')">Ad Spend (USD)</button>
+          <button class="scatter-btn" id="btn-visits" onclick="switchScatter('visits')">Website Visits</button>
+        </div>
+        <div class="chart-container tall">
+          <canvas id="chartScatter"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── REGRESSION FORECAST ───────────────────── -->
+    <section class="section" id="forecast">
+      <div class="section-header">
+        <div class="section-icon">&#128200;</div>
+        <div>
+          <div class="section-title">Regression Forecast</div>
+          <div class="section-desc">Multiple linear regression: Revenue ~ Ad Spend + Website Visits + Units Sold + Discount Rate (all 365 observations, no train/test split)</div>
+        </div>
+      </div>
+
+      <div class="reg-grid">
+        <!-- Equation card -->
+        <div class="reg-eq-card">
+          <h3>&#128203; Regression Equation</h3>
+          <div class="reg-equation">
+            Revenue&#770; =<br>
+            &nbsp;&nbsp;<span>&#8722;55.65</span> (intercept)<br>
+            &nbsp;&nbsp;<span>&#8722; 0.941</span> &#215; Ad_Spend_USD<br>
+            &nbsp;&nbsp;<span>+ 0.426</span> &#215; Website_Visits<br>
+            &nbsp;&nbsp;<span>+12.149</span> &#215; Units_Sold<br>
+            &nbsp;&nbsp;<span>+154.85</span> &#215; Discount_Rate
+          </div>
+          <div class="reg-metrics">
+            <div class="reg-metric">
+              <div class="reg-metric-label">R&#178; Score</div>
+              <div class="reg-metric-val">0.164</div>
+            </div>
+            <div class="reg-metric">
+              <div class="reg-metric-label">Observations</div>
+              <div class="reg-metric-val">365</div>
+            </div>
+            <div class="reg-metric">
+              <div class="reg-metric-label">Predictors</div>
+              <div class="reg-metric-val">4</div>
+            </div>
+            <div class="reg-metric">
+              <div class="reg-metric-label">Method</div>
+              <div class="reg-metric-val" style="font-size:14px;">OLS Full</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coefficient table -->
+        <div class="coeff-table-card">
+          <h3>&#128202; Coefficient Summary</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Variable</th>
+                <th>Coefficient</th>
+                <th>Direction</th>
+                <th>Relative Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Intercept</td>
+                <td>&#8722;55.65</td>
+                <td><span class="sign-badge sign-neg">&#8722;</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>Ad Spend (USD)</td>
+                <td>&#8722;0.941</td>
+                <td><span class="sign-badge sign-neg">&#8722;</span></td>
+                <td>
+                  <div class="coeff-bar-wrap">
+                    <div class="coeff-bar negative" style="width:12px;"></div>
+                    <span style="font-size:11px;color:var(--muted)">Low</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>Website Visits</td>
+                <td>+0.426</td>
+                <td><span class="sign-badge sign-pos">+</span></td>
+                <td>
+                  <div class="coeff-bar-wrap">
+                    <div class="coeff-bar positive" style="width:24px;"></div>
+                    <span style="font-size:11px;color:var(--muted)">Moderate</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>Units Sold</td>
+                <td>+12.149</td>
+                <td><span class="sign-badge sign-pos">+</span></td>
+                <td>
+                  <div class="coeff-bar-wrap">
+                    <div class="coeff-bar positive" style="width:60px;"></div>
+                    <span style="font-size:11px;color:var(--muted)">High</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>Discount Rate</td>
+                <td>+154.85</td>
+                <td><span class="sign-badge sign-pos">+</span></td>
+                <td>
+                  <div class="coeff-bar-wrap">
+                    <div class="coeff-bar positive" style="width:90px;"></div>
+                    <span style="font-size:11px;color:var(--muted)">Highest</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Actual vs Predicted chart -->
+      <div class="chart-card full-width" style="margin-bottom:20px;">
+        <div class="chart-title">Actual vs. Predicted Revenue</div>
+        <div class="chart-subtitle">Model predictions plotted against actual revenue values. Points near the diagonal indicate accurate predictions.</div>
+        <div class="chart-container tall">
+          <canvas id="chartActualPred"></canvas>
+        </div>
+      </div>
+
+      <!-- Prediction calculator -->
+      <div class="predictor-card">
+        <h3>&#129302; Revenue Predictor</h3>
+        <p>Enter input values to generate a revenue forecast using the regression model.</p>
+        <div class="predictor-inputs">
+          <div class="input-group">
+            <label for="i-adspend">Ad Spend (USD)</label>
+            <input type="number" id="i-adspend" placeholder="e.g. 55" value="55" min="0" step="1">
+          </div>
+          <div class="input-group">
+            <label for="i-visits">Website Visits</label>
+            <input type="number" id="i-visits" placeholder="e.g. 600" value="600" min="0" step="1">
+          </div>
+          <div class="input-group">
+            <label for="i-units">Units Sold</label>
+            <input type="number" id="i-units" placeholder="e.g. 2" value="2" min="1" step="1">
+          </div>
+          <div class="input-group">
+            <label for="i-discount">Discount Rate (0–1)</label>
+            <input type="number" id="i-discount" placeholder="e.g. 0.08" value="0.08" min="0" max="1" step="0.01">
+          </div>
+        </div>
+        <button class="predict-btn" onclick="runPredictor()">&#9654; Generate Forecast</button>
+        <div class="prediction-result" id="pred-result">
+          <div class="pred-label">Predicted Revenue (USD)</div>
+          <div class="pred-val" id="pred-val">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">
+            Based on OLS regression with 4 predictors, R&#178; = 0.164
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BUSINESS INSIGHTS ──────────────────────── -->
+    <section class="section" id="insights">
+      <div class="section-header">
+        <div class="section-icon">&#128161;</div>
+        <div>
+          <div class="section-title">Regression Interpretation</div>
+          <div class="section-desc">What the OLS model suggests about each variable's relationship with Revenue_USD</div>
+        </div>
+      </div>
+
+      <!-- Verification banner -->
+      <div class="verify-banner">
+        <div class="vb-icon">&#9888;&#65039;</div>
+        <div class="vb-text">
+          <strong>Always verify these interpretations against your Google Colab output.</strong>
+          The coefficients below come from an OLS regression fit on all 365 orders with no train/test split.
+          Check the <code>model.summary()</code> (statsmodels) or <code>coef_</code> / <code>intercept_</code>
+          (scikit-learn) values in your notebook to confirm signs, magnitudes, and p-values.
+          A low R&#178; (0.164) means most revenue variance is unexplained — treat every interpretation as
+          tentative and correlational, <strong>not causal</strong>.
+        </div>
+      </div>
+
+      <div class="insights-grid">
+
+        <!-- Units Sold -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--green);"></div>
+            <div class="insight-title">Units Sold</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-pos">&#9650; Appears to increase revenue</span><br>
+            Coefficient <span class="coeff-chip">+12.15</span> — the model suggests that each additional
+            unit sold is associated with approximately <strong>$12.15 more in expected revenue</strong>,
+            holding ad spend, website visits, and discount rate constant. This is the largest positive
+            predictor and aligns with intuition: selling more units directly scales revenue. The effect
+            may also partly reflect that higher-priced product categories tend to sell in higher quantities.
+            <span class="caution">&#128270; Verify: check that your Colab output shows a positive coefficient for <code>Units_Sold</code> and that the p-value indicates statistical significance.</span>
+          </div>
+        </div>
+
+        <!-- Discount Rate -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--orange);"></div>
+            <div class="insight-title">Discount Rate</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-pos">&#9650; Appears to increase revenue (use caution)</span><br>
+            Coefficient <span class="coeff-chip">+154.85</span> — the model suggests that a 1 percentage-point
+            increase in discount rate (e.g., 8% &#8594; 9%, encoded as 0.08 &#8594; 0.09) is associated with roughly
+            <strong>$1.55 more in expected revenue</strong>. The positive sign is counterintuitive, since
+            discounts reduce unit price. A likely explanation is that higher discounts are applied to
+            larger or higher-priced orders, creating a misleading positive association.
+            <span class="caution">&#128270; Verify: confirm the sign and magnitude of the <code>Discount_Rate</code> coefficient in Colab. A positive value here does not mean discounting is a revenue-growth strategy.</span>
+          </div>
+        </div>
+
+        <!-- Website Visits -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--blue);"></div>
+            <div class="insight-title">Website Visits</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-pos">&#9650; Appears to increase revenue</span><br>
+            Coefficient <span class="coeff-chip">+0.43</span> — the model suggests that each additional
+            website visit is associated with approximately <strong>$0.43 more in expected revenue</strong>.
+            The positive direction is consistent with the expectation that higher traffic leads to more
+            purchasing activity. However, the per-visit effect is modest, and the relationship may partly
+            reflect shared seasonality — both visits and revenue may rise together during peak periods
+            rather than one causing the other.
+            <span class="caution">&#128270; Verify: check the <code>Website_Visits</code> coefficient sign in Colab. If positive, the direction is consistent with this interpretation, though the magnitude may differ depending on how the model was specified.</span>
+          </div>
+        </div>
+
+        <!-- Ad Spend -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--red);"></div>
+            <div class="insight-title">Ad Spend (USD)</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-neg">&#9660; Appears to decrease revenue (likely confounded)</span><br>
+            Coefficient <span class="coeff-chip">&#8722;0.94</span> — the model suggests that each additional
+            dollar of ad spend is associated with roughly <strong>$0.94 less in expected revenue</strong>.
+            This is almost certainly not causal. A plausible explanation is reverse causality or
+            confounding: ad spend may be concentrated on lower-priced product categories, or campaigns
+            may be intensified precisely during weak-demand periods. This result should <em>not</em> be
+            interpreted as evidence that advertising reduces revenue.
+            <span class="caution">&#128270; Verify: confirm the negative sign of <code>Ad_Spend_USD</code> in your Colab output. Consider whether the model includes sufficient controls (e.g., product category, price) to isolate the ad spend effect.</span>
+          </div>
+        </div>
+
+        <!-- Customer Rating -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--purple);"></div>
+            <div class="insight-title">Customer Rating</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-na">&#8212; Not included in this regression model</span><br>
+            <code>Customer_Rating</code> was not used as a predictor in this OLS model, so no coefficient
+            or directional effect can be reported here. Descriptively, the dataset shows a mean rating
+            of <strong>4.39 / 5.0</strong>, with little visible spread at the order level. Whether higher
+            ratings are systematically associated with higher revenue cannot be determined from this
+            model alone.
+            <span class="caution">&#128270; Verify: if your Colab notebook includes <code>Customer_Rating</code> as a predictor, note its coefficient sign. If it is not included, consider adding it to a new model version and comparing the R&#178; to assess whether it improves explanatory power.</span>
+          </div>
+        </div>
+
+        <!-- Model context -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <div class="insight-dot" style="background:var(--accent);"></div>
+            <div class="insight-title">Model Fit &amp; Overall Limitations</div>
+          </div>
+          <div class="insight-body">
+            <span class="dir-badge dir-na">R&#178; = 0.164 &nbsp;|&nbsp; n = 365 &nbsp;|&nbsp; OLS, no split</span><br>
+            The model explains only <strong>16.4% of total revenue variance</strong>, meaning 83.6% is
+            driven by factors not captured by these four predictors. This is typical in retail settings
+            where product mix, pricing tiers, promotions, and customer behavior all interact. All coefficient
+            interpretations above are <em>conditional associations</em> — not causal estimates — and are
+            sensitive to omitted variables, multicollinearity, and the absence of a validation set.
+            <span class="caution">&#128270; Verify: cross-check the R&#178;, F-statistic, and individual p-values in your Colab <code>model.summary()</code> table before drawing conclusions or presenting results.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+// ── Raw data ─────────────────────────────────────────
+const DATA = [{"order_id": "BI-0001", "date": "2025-01-01", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 111.69, "units": 2, "discount": 0.044, "ad_spend": 34.88, "visits": 463, "delivery": 3, "rating": 4.13, "revenue": 220.09, "cost": 123.14, "profit": 70.57}, {"order_id": "BI-0002", "date": "2025-01-02", "month": "Jan", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 37.77, "units": 1, "discount": 0.081, "ad_spend": 5.0, "visits": 366, "delivery": 3, "rating": 4.91, "revenue": 34.13, "cost": 16.79, "profit": 7.39}, {"order_id": "BI-0003", "date": "2025-01-03", "month": "Jan", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 103.24, "units": 1, "discount": 0.036, "ad_spend": 58.55, "visits": 550, "delivery": 3, "rating": 4.75, "revenue": 96.2, "cost": 55.14, "profit": 1.65}, {"order_id": "BI-0004", "date": "2025-01-04", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 113.06, "units": 2, "discount": 0.067, "ad_spend": 79.78, "visits": 668, "delivery": 3, "rating": 4.74, "revenue": 216.78, "cost": 124.67, "profit": 41.03}, {"order_id": "BI-0005", "date": "2025-01-05", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 106.37, "units": 1, "discount": 0.068, "ad_spend": 61.53, "visits": 671, "delivery": 3, "rating": 4.77, "revenue": 97.84, "cost": 58.84, "profit": -2.03}, {"order_id": "BI-0006", "date": "2025-01-06", "month": "Jan", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 205.18, "units": 3, "discount": 0.13, "ad_spend": 86.68, "visits": 710, "delivery": 2, "rating": 4.19, "revenue": 538.55, "cost": 428.68, "profit": 57.4}, {"order_id": "BI-0007", "date": "2025-01-07", "month": "Jan", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 81.3, "units": 2, "discount": 0.097, "ad_spend": 43.22, "visits": 565, "delivery": 2, "rating": 4.68, "revenue": 146.92, "cost": 95.89, "profit": 22.46}, {"order_id": "BI-0008", "date": "2025-01-08", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 70.24, "units": 2, "discount": 0.041, "ad_spend": 93.57, "visits": 659, "delivery": 2, "rating": 4.65, "revenue": 132.69, "cost": 85.18, "profit": -8.75}, {"order_id": "BI-0009", "date": "2025-01-09", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 93.57, "units": 2, "discount": 0.088, "ad_spend": 77.9, "visits": 610, "delivery": 4, "rating": 4.43, "revenue": 160.78, "cost": 108.82, "profit": -0.48}, {"order_id": "BI-0010", "date": "2025-01-10", "month": "Jan", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Beauty", "unit_price": 38.82, "units": 2, "discount": 0.084, "ad_spend": 30.69, "visits": 516, "delivery": 4, "rating": 4.69, "revenue": 75.26, "cost": 33.48, "profit": 15.3}, {"order_id": "BI-0011", "date": "2025-01-11", "month": "Jan", "region": "North", "segment": "Business Account", "channel": "Email", "category": "Home & Kitchen", "unit_price": 70.0, "units": 4, "discount": 0.112, "ad_spend": 46.43, "visits": 574, "delivery": 3, "rating": 4.64, "revenue": 277.54, "cost": 164.75, "profit": 80.05}, {"order_id": "BI-0012", "date": "2025-01-12", "month": "Jan", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 83.56, "units": 3, "discount": 0.079, "ad_spend": 87.52, "visits": 829, "delivery": 3, "rating": 4.37, "revenue": 215.52, "cost": 142.93, "profit": 17.26}, {"order_id": "BI-0013", "date": "2025-01-13", "month": "Jan", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 94.36, "units": 2, "discount": 0.073, "ad_spend": 87.69, "visits": 607, "delivery": 3, "rating": 5.0, "revenue": 180.9, "cost": 100.51, "profit": 24.96}, {"order_id": "BI-0014", "date": "2025-01-14", "month": "Jan", "region": "Central", "segment": "New Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 80.36, "units": 2, "discount": 0.136, "ad_spend": 23.21, "visits": 420, "delivery": 3, "rating": 4.41, "revenue": 139.81, "cost": 92.83, "profit": 27.01}, {"order_id": "BI-0015", "date": "2025-01-15", "month": "Jan", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 130.27, "units": 2, "discount": 0.105, "ad_spend": 89.91, "visits": 722, "delivery": 2, "rating": 3.95, "revenue": 249.26, "cost": 142.4, "profit": 52.61}, {"order_id": "BI-0016", "date": "2025-01-16", "month": "Jan", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 200.06, "units": 2, "discount": 0.113, "ad_spend": 53.89, "visits": 588, "delivery": 2, "rating": 4.63, "revenue": 356.38, "cost": 278.21, "profit": 43.73}, {"order_id": "BI-0017", "date": "2025-01-17", "month": "Jan", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 42.18, "units": 2, "discount": 0.078, "ad_spend": 54.19, "visits": 514, "delivery": 3, "rating": 4.31, "revenue": 80.87, "cost": 38.67, "profit": 5.19}, {"order_id": "BI-0018", "date": "2025-01-18", "month": "Jan", "region": "Central", "segment": "New Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 182.67, "units": 2, "discount": 0.076, "ad_spend": 49.36, "visits": 524, "delivery": 4, "rating": 5.0, "revenue": 326.0, "cost": 245.94, "profit": 43.31}, {"order_id": "BI-0019", "date": "2025-01-19", "month": "Jan", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 155.89, "units": 1, "discount": 0.027, "ad_spend": 6.88, "visits": 435, "delivery": 2, "rating": 4.32, "revenue": 151.09, "cost": 99.48, "profit": 43.03}, {"order_id": "BI-0020", "date": "2025-01-20", "month": "Jan", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 94.54, "units": 1, "discount": 0.152, "ad_spend": 53.06, "visits": 604, "delivery": 3, "rating": 4.96, "revenue": 79.41, "cost": 53.41, "profit": -10.38}, {"order_id": "BI-0021", "date": "2025-01-21", "month": "Jan", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 215.85, "units": 1, "discount": 0.041, "ad_spend": 15.71, "visits": 412, "delivery": 3, "rating": 4.7, "revenue": 209.98, "cost": 147.05, "profit": 47.09}, {"order_id": "BI-0022", "date": "2025-01-22", "month": "Jan", "region": "Central", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 249.65, "units": 3, "discount": 0.123, "ad_spend": 70.65, "visits": 627, "delivery": 3, "rating": 3.96, "revenue": 663.53, "cost": 517.84, "profit": 99.63}, {"order_id": "BI-0023", "date": "2025-01-23", "month": "Jan", "region": "North", "segment": "Business Account", "channel": "Marketplace", "category": "Fashion", "unit_price": 65.41, "units": 2, "discount": 0.079, "ad_spend": 36.51, "visits": 484, "delivery": 2, "rating": 4.34, "revenue": 127.54, "cost": 61.91, "profit": 40.75}, {"order_id": "BI-0024", "date": "2025-01-24", "month": "Jan", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 253.53, "units": 2, "discount": 0.111, "ad_spend": 63.38, "visits": 566, "delivery": 4, "rating": 4.24, "revenue": 431.56, "cost": 340.76, "profit": 46.34}, {"order_id": "BI-0025", "date": "2025-01-25", "month": "Jan", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 89.48, "units": 4, "discount": 0.161, "ad_spend": 102.9, "visits": 838, "delivery": 4, "rating": 4.29, "revenue": 312.16, "cost": 199.03, "profit": 46.94}, {"order_id": "BI-0026", "date": "2025-01-26", "month": "Jan", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 119.65, "units": 2, "discount": 0.114, "ad_spend": 33.52, "visits": 469, "delivery": 3, "rating": 3.94, "revenue": 224.9, "cost": 134.55, "profit": 64.72}, {"order_id": "BI-0027", "date": "2025-01-27", "month": "Jan", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Beauty", "unit_price": 43.27, "units": 2, "discount": 0.061, "ad_spend": 7.92, "visits": 430, "delivery": 1, "rating": 4.67, "revenue": 82.61, "cost": 41.14, "profit": 34.71}, {"order_id": "BI-0028", "date": "2025-01-28", "month": "Jan", "region": "East", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 231.33, "units": 2, "discount": 0.063, "ad_spend": 46.57, "visits": 534, "delivery": 3, "rating": 4.72, "revenue": 437.63, "cost": 317.59, "profit": 87.23}, {"order_id": "BI-0029", "date": "2025-01-29", "month": "Jan", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 206.85, "units": 1, "discount": 0.013, "ad_spend": 38.0, "visits": 533, "delivery": 3, "rating": 4.06, "revenue": 211.07, "cost": 140.71, "profit": 42.25}, {"order_id": "BI-0030", "date": "2025-01-30", "month": "Jan", "region": "Central", "segment": "Returning Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 159.51, "units": 2, "discount": 0.063, "ad_spend": 86.9, "visits": 686, "delivery": 4, "rating": 4.39, "revenue": 279.82, "cost": 207.43, "profit": 14.99}, {"order_id": "BI-0031", "date": "2025-01-31", "month": "Jan", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 46.98, "units": 3, "discount": 0.051, "ad_spend": 99.97, "visits": 778, "delivery": 2, "rating": 4.67, "revenue": 134.56, "cost": 75.24, "profit": -0.47}, {"order_id": "BI-0032", "date": "2025-02-01", "month": "Feb", "region": "Central", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 200.08, "units": 1, "discount": 0.079, "ad_spend": 23.54, "visits": 501, "delivery": 4, "rating": 4.23, "revenue": 169.63, "cost": 129.88, "profit": 17.21}, {"order_id": "BI-0033", "date": "2025-02-02", "month": "Feb", "region": "South", "segment": "Business Account", "channel": "Organic Search", "category": "Fashion", "unit_price": 73.5, "units": 2, "discount": 0.057, "ad_spend": 14.87, "visits": 515, "delivery": 3, "rating": 4.82, "revenue": 133.98, "cost": 74.85, "profit": 43.76}, {"order_id": "BI-0034", "date": "2025-02-03", "month": "Feb", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 115.19, "units": 2, "discount": 0.052, "ad_spend": 125.97, "visits": 803, "delivery": 4, "rating": 4.22, "revenue": 226.59, "cost": 124.02, "profit": 23.68}, {"order_id": "BI-0035", "date": "2025-02-04", "month": "Feb", "region": "North", "segment": "Business Account", "channel": "Paid Ads", "category": "Sports", "unit_price": 114.78, "units": 4, "discount": 0.112, "ad_spend": 91.59, "visits": 844, "delivery": 2, "rating": 3.91, "revenue": 402.51, "cost": 262.36, "profit": 84.97}, {"order_id": "BI-0036", "date": "2025-02-05", "month": "Feb", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 38.73, "units": 5, "discount": 0.102, "ad_spend": 132.39, "visits": 963, "delivery": 2, "rating": 4.68, "revenue": 176.0, "cost": 84.6, "profit": 13.79}, {"order_id": "BI-0037", "date": "2025-02-06", "month": "Feb", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 237.87, "units": 3, "discount": 0.168, "ad_spend": 89.72, "visits": 760, "delivery": 3, "rating": 4.29, "revenue": 598.27, "cost": 495.77, "profit": 45.95}, {"order_id": "BI-0038", "date": "2025-02-07", "month": "Feb", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 128.92, "units": 3, "discount": 0.108, "ad_spend": 141.76, "visits": 932, "delivery": 4, "rating": 4.33, "revenue": 334.3, "cost": 215.92, "profit": 30.82}, {"order_id": "BI-0039", "date": "2025-02-08", "month": "Feb", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 202.79, "units": 1, "discount": 0.063, "ad_spend": 39.54, "visits": 544, "delivery": 4, "rating": 4.68, "revenue": 187.49, "cost": 128.29, "profit": 27.86}, {"order_id": "BI-0040", "date": "2025-02-09", "month": "Feb", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 102.83, "units": 2, "discount": 0.0, "ad_spend": 5.0, "visits": 490, "delivery": 4, "rating": 4.15, "revenue": 192.81, "cost": 111.93, "profit": 68.53}, {"order_id": "BI-0041", "date": "2025-02-10", "month": "Feb", "region": "West", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 42.09, "units": 2, "discount": 0.026, "ad_spend": 32.03, "visits": 558, "delivery": 2, "rating": 4.17, "revenue": 81.38, "cost": 39.75, "profit": 19.22}, {"order_id": "BI-0042", "date": "2025-02-11", "month": "Feb", "region": "South", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 33.71, "units": 3, "discount": 0.077, "ad_spend": 98.16, "visits": 684, "delivery": 4, "rating": 3.77, "revenue": 91.29, "cost": 47.33, "profit": -19.63}, {"order_id": "BI-0043", "date": "2025-02-12", "month": "Feb", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 63.02, "units": 2, "discount": 0.044, "ad_spend": 24.46, "visits": 490, "delivery": 3, "rating": 4.0, "revenue": 123.73, "cost": 66.43, "profit": 36.65}, {"order_id": "BI-0044", "date": "2025-02-13", "month": "Feb", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 33.29, "units": 2, "discount": 0.064, "ad_spend": 64.47, "visits": 574, "delivery": 2, "rating": 4.54, "revenue": 62.48, "cost": 29.16, "profit": -6.94}, {"order_id": "BI-0045", "date": "2025-02-14", "month": "Feb", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 53.7, "units": 1, "discount": 0.057, "ad_spend": 29.87, "visits": 473, "delivery": 4, "rating": 3.96, "revenue": 47.72, "cost": 29.23, "profit": -7.54}, {"order_id": "BI-0046", "date": "2025-02-15", "month": "Feb", "region": "East", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 95.85, "units": 1, "discount": 0.06, "ad_spend": 24.19, "visits": 537, "delivery": 4, "rating": 3.94, "revenue": 90.97, "cost": 55.69, "profit": 12.38}, {"order_id": "BI-0047", "date": "2025-02-16", "month": "Feb", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 93.09, "units": 1, "discount": 0.032, "ad_spend": 62.37, "visits": 559, "delivery": 3, "rating": 4.63, "revenue": 83.7, "cost": 52.12, "profit": -9.93}, {"order_id": "BI-0048", "date": "2025-02-17", "month": "Feb", "region": "West", "segment": "New Customer", "channel": "Email", "category": "Fashion", "unit_price": 68.5, "units": 2, "discount": 0.147, "ad_spend": 44.74, "visits": 523, "delivery": 4, "rating": 3.91, "revenue": 110.24, "cost": 72.35, "profit": 3.68}, {"order_id": "BI-0049", "date": "2025-02-18", "month": "Feb", "region": "Central", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 198.9, "units": 2, "discount": 0.141, "ad_spend": 58.95, "visits": 590, "delivery": 4, "rating": 4.13, "revenue": 334.49, "cost": 266.6, "profit": 25.87}, {"order_id": "BI-0050", "date": "2025-02-19", "month": "Feb", "region": "West", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 65.24, "units": 2, "discount": 0.076, "ad_spend": 115.89, "visits": 762, "delivery": 3, "rating": 4.28, "revenue": 123.39, "cost": 77.07, "profit": -24.62}, {"order_id": "BI-0051", "date": "2025-02-20", "month": "Feb", "region": "West", "segment": "Returning Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 91.28, "units": 2, "discount": 0.065, "ad_spend": 38.93, "visits": 421, "delivery": 3, "rating": 4.29, "revenue": 169.49, "cost": 112.06, "profit": 28.82}, {"order_id": "BI-0052", "date": "2025-02-21", "month": "Feb", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 36.52, "units": 1, "discount": 0.092, "ad_spend": 23.19, "visits": 427, "delivery": 2, "rating": 4.16, "revenue": 33.04, "cost": 15.45, "profit": 0.03}, {"order_id": "BI-0053", "date": "2025-02-22", "month": "Feb", "region": "South", "segment": "Business Account", "channel": "Email", "category": "Sports", "unit_price": 100.58, "units": 3, "discount": 0.13, "ad_spend": 49.13, "visits": 561, "delivery": 4, "rating": 4.39, "revenue": 267.06, "cost": 168.2, "profit": 62.24}, {"order_id": "BI-0054", "date": "2025-02-23", "month": "Feb", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 61.26, "units": 3, "discount": 0.085, "ad_spend": 85.62, "visits": 800, "delivery": 4, "rating": 4.19, "revenue": 170.32, "cost": 94.75, "profit": 18.89}, {"order_id": "BI-0055", "date": "2025-02-24", "month": "Feb", "region": "North", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 186.94, "units": 1, "discount": 0.016, "ad_spend": 5.0, "visits": 400, "delivery": 3, "rating": 4.26, "revenue": 183.48, "cost": 131.79, "profit": 41.74}, {"order_id": "BI-0056", "date": "2025-02-25", "month": "Feb", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 92.16, "units": 2, "discount": 0.1, "ad_spend": 106.65, "visits": 761, "delivery": 3, "rating": 4.28, "revenue": 155.59, "cost": 109.47, "profit": -19.74}, {"order_id": "BI-0057", "date": "2025-02-26", "month": "Feb", "region": "West", "segment": "Business Account", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 75.59, "units": 2, "discount": 0.048, "ad_spend": 53.95, "visits": 676, "delivery": 3, "rating": 4.62, "revenue": 137.53, "cost": 89.05, "profit": 11.6}, {"order_id": "BI-0058", "date": "2025-02-27", "month": "Feb", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 71.29, "units": 2, "discount": 0.077, "ad_spend": 22.85, "visits": 423, "delivery": 1, "rating": 4.86, "revenue": 126.21, "cost": 69.32, "profit": 41.92}, {"order_id": "BI-0059", "date": "2025-02-28", "month": "Feb", "region": "North", "segment": "Business Account", "channel": "Email", "category": "Electronics", "unit_price": 210.29, "units": 2, "discount": 0.089, "ad_spend": 28.31, "visits": 525, "delivery": 2, "rating": 5.0, "revenue": 400.67, "cost": 276.77, "profit": 103.53}, {"order_id": "BI-0060", "date": "2025-03-01", "month": "Mar", "region": "South", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 91.5, "units": 3, "discount": 0.146, "ad_spend": 46.44, "visits": 648, "delivery": 2, "rating": 4.54, "revenue": 222.44, "cost": 168.58, "profit": 23.52}, {"order_id": "BI-0061", "date": "2025-03-02", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Beauty", "unit_price": 33.01, "units": 2, "discount": 0.077, "ad_spend": 45.22, "visits": 583, "delivery": 3, "rating": 3.94, "revenue": 60.74, "cost": 31.58, "profit": -2.91}, {"order_id": "BI-0062", "date": "2025-03-03", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Marketplace", "category": "Fashion", "unit_price": 63.82, "units": 1, "discount": 0.032, "ad_spend": 41.35, "visits": 499, "delivery": 2, "rating": 4.61, "revenue": 57.36, "cost": 33.04, "profit": -3.23}, {"order_id": "BI-0063", "date": "2025-03-04", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 88.51, "units": 2, "discount": 0.052, "ad_spend": 54.79, "visits": 623, "delivery": 4, "rating": 4.65, "revenue": 159.46, "cost": 101.53, "profit": 18.2}, {"order_id": "BI-0064", "date": "2025-03-05", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 39.42, "units": 2, "discount": 0.068, "ad_spend": 60.93, "visits": 616, "delivery": 3, "rating": 4.5, "revenue": 72.06, "cost": 37.26, "profit": -5.91}, {"order_id": "BI-0065", "date": "2025-03-06", "month": "Mar", "region": "Central", "segment": "Business Account", "channel": "Organic Search", "category": "Beauty", "unit_price": 38.14, "units": 2, "discount": 0.051, "ad_spend": 5.0, "visits": 384, "delivery": 5, "rating": 3.3, "revenue": 76.91, "cost": 32.97, "profit": 29.19}, {"order_id": "BI-0066", "date": "2025-03-07", "month": "Mar", "region": "Central", "segment": "Business Account", "channel": "Social Media", "category": "Electronics", "unit_price": 201.53, "units": 3, "discount": 0.154, "ad_spend": 95.69, "visits": 813, "delivery": 4, "rating": 4.88, "revenue": 513.99, "cost": 416.39, "profit": 35.37}, {"order_id": "BI-0067", "date": "2025-03-08", "month": "Mar", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 121.99, "units": 3, "discount": 0.083, "ad_spend": 88.49, "visits": 790, "delivery": 3, "rating": 4.43, "revenue": 341.36, "cost": 187.64, "profit": 97.85}, {"order_id": "BI-0068", "date": "2025-03-09", "month": "Mar", "region": "Central", "segment": "New Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 120.97, "units": 1, "discount": 0.026, "ad_spend": 21.51, "visits": 400, "delivery": 4, "rating": 4.07, "revenue": 119.17, "cost": 64.19, "profit": 33.55}, {"order_id": "BI-0069", "date": "2025-03-10", "month": "Mar", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 207.39, "units": 1, "discount": 0.112, "ad_spend": 34.78, "visits": 531, "delivery": 4, "rating": 4.68, "revenue": 175.48, "cost": 135.63, "profit": 11.12}, {"order_id": "BI-0070", "date": "2025-03-11", "month": "Mar", "region": "North", "segment": "New Customer", "channel": "Email", "category": "Electronics", "unit_price": 195.95, "units": 1, "discount": 0.091, "ad_spend": 5.0, "visits": 458, "delivery": 3, "rating": 4.24, "revenue": 173.33, "cost": 129.22, "profit": 34.16}, {"order_id": "BI-0071", "date": "2025-03-12", "month": "Mar", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 101.79, "units": 4, "discount": 0.156, "ad_spend": 92.35, "visits": 876, "delivery": 3, "rating": 3.98, "revenue": 329.0, "cost": 218.04, "profit": 52.97}, {"order_id": "BI-0072", "date": "2025-03-13", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 116.99, "units": 2, "discount": 0.1, "ad_spend": 40.84, "visits": 651, "delivery": 1, "rating": 4.48, "revenue": 211.52, "cost": 126.11, "profit": 60.55}, {"order_id": "BI-0073", "date": "2025-03-14", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Beauty", "unit_price": 38.03, "units": 3, "discount": 0.123, "ad_spend": 30.82, "visits": 608, "delivery": 4, "rating": 4.98, "revenue": 102.45, "cost": 49.27, "profit": 26.63}, {"order_id": "BI-0074", "date": "2025-03-15", "month": "Mar", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 74.36, "units": 1, "discount": 0.067, "ad_spend": 35.96, "visits": 556, "delivery": 3, "rating": 4.47, "revenue": 70.43, "cost": 33.73, "profit": 9.72}, {"order_id": "BI-0075", "date": "2025-03-16", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 80.06, "units": 3, "discount": 0.118, "ad_spend": 32.18, "visits": 672, "delivery": 3, "rating": 4.49, "revenue": 212.96, "cost": 134.42, "profit": 53.64}, {"order_id": "BI-0076", "date": "2025-03-17", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 85.35, "units": 2, "discount": 0.102, "ad_spend": 31.64, "visits": 491, "delivery": 3, "rating": 4.43, "revenue": 147.11, "cost": 95.4, "profit": 27.1}, {"order_id": "BI-0077", "date": "2025-03-18", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Beauty", "unit_price": 39.05, "units": 2, "discount": 0.066, "ad_spend": 43.34, "visits": 637, "delivery": 3, "rating": 4.7, "revenue": 73.87, "cost": 34.77, "profit": 8.06}, {"order_id": "BI-0078", "date": "2025-03-19", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 88.6, "units": 2, "discount": 0.066, "ad_spend": 68.67, "visits": 644, "delivery": 3, "rating": 4.4, "revenue": 165.08, "cost": 100.15, "profit": 19.96}, {"order_id": "BI-0079", "date": "2025-03-20", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 229.06, "units": 1, "discount": 0.037, "ad_spend": 32.06, "visits": 550, "delivery": 2, "rating": 5.0, "revenue": 206.0, "cost": 150.06, "profit": 33.51}, {"order_id": "BI-0080", "date": "2025-03-21", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 217.96, "units": 2, "discount": 0.112, "ad_spend": 106.15, "visits": 845, "delivery": 4, "rating": 3.53, "revenue": 353.39, "cost": 296.81, "profit": -11.4}, {"order_id": "BI-0081", "date": "2025-03-22", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 79.62, "units": 2, "discount": 0.087, "ad_spend": 35.99, "visits": 539, "delivery": 4, "rating": 4.07, "revenue": 149.32, "cost": 89.27, "profit": 30.66}, {"order_id": "BI-0082", "date": "2025-03-23", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 90.53, "units": 2, "discount": 0.101, "ad_spend": 19.53, "visits": 532, "delivery": 3, "rating": 4.0, "revenue": 163.46, "cost": 114.01, "profit": 31.51}, {"order_id": "BI-0083", "date": "2025-03-24", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 83.43, "units": 2, "discount": 0.136, "ad_spend": 37.13, "visits": 680, "delivery": 2, "rating": 4.83, "revenue": 143.9, "cost": 93.15, "profit": 25.52}, {"order_id": "BI-0084", "date": "2025-03-25", "month": "Mar", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 88.98, "units": 2, "discount": 0.042, "ad_spend": 5.0, "visits": 374, "delivery": 3, "rating": 4.89, "revenue": 166.48, "cost": 102.79, "profit": 53.74}, {"order_id": "BI-0085", "date": "2025-03-26", "month": "Mar", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 70.74, "units": 2, "discount": 0.076, "ad_spend": 71.99, "visits": 593, "delivery": 3, "rating": 4.25, "revenue": 130.81, "cost": 84.34, "profit": -0.32}, {"order_id": "BI-0086", "date": "2025-03-27", "month": "Mar", "region": "West", "segment": "Business Account", "channel": "Marketplace", "category": "Beauty", "unit_price": 42.44, "units": 3, "discount": 0.087, "ad_spend": 73.43, "visits": 691, "delivery": 4, "rating": 4.53, "revenue": 118.62, "cost": 55.09, "profit": 13.54}, {"order_id": "BI-0087", "date": "2025-03-28", "month": "Mar", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 82.23, "units": 3, "discount": 0.142, "ad_spend": 85.12, "visits": 665, "delivery": 3, "rating": 4.47, "revenue": 221.24, "cost": 141.27, "profit": 25.95}, {"order_id": "BI-0088", "date": "2025-03-29", "month": "Mar", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 205.36, "units": 1, "discount": 0.042, "ad_spend": 6.5, "visits": 471, "delivery": 4, "rating": 4.24, "revenue": 180.28, "cost": 135.27, "profit": 31.83}, {"order_id": "BI-0089", "date": "2025-03-30", "month": "Mar", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 85.38, "units": 1, "discount": 0.052, "ad_spend": 43.19, "visits": 605, "delivery": 3, "rating": 5.0, "revenue": 74.45, "cost": 48.58, "profit": -5.09}, {"order_id": "BI-0090", "date": "2025-03-31", "month": "Mar", "region": "West", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 214.64, "units": 2, "discount": 0.086, "ad_spend": 38.34, "visits": 588, "delivery": 3, "rating": 4.15, "revenue": 394.07, "cost": 291.92, "profit": 73.86}, {"order_id": "BI-0091", "date": "2025-04-01", "month": "Apr", "region": "Central", "segment": "Business Account", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 69.63, "units": 2, "discount": 0.041, "ad_spend": 13.46, "visits": 372, "delivery": 3, "rating": 5.0, "revenue": 131.33, "cost": 79.74, "profit": 36.99}, {"order_id": "BI-0092", "date": "2025-04-02", "month": "Apr", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 77.23, "units": 3, "discount": 0.044, "ad_spend": 93.47, "visits": 766, "delivery": 3, "rating": 4.58, "revenue": 229.06, "cost": 130.61, "profit": 39.84}, {"order_id": "BI-0093", "date": "2025-04-03", "month": "Apr", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 63.9, "units": 2, "discount": 0.071, "ad_spend": 26.58, "visits": 593, "delivery": 3, "rating": 4.26, "revenue": 127.85, "cost": 71.02, "profit": 35.01}, {"order_id": "BI-0094", "date": "2025-04-04", "month": "Apr", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 220.59, "units": 1, "discount": 0.033, "ad_spend": 5.0, "visits": 430, "delivery": 2, "rating": 4.27, "revenue": 205.81, "cost": 161.98, "profit": 36.28}, {"order_id": "BI-0095", "date": "2025-04-05", "month": "Apr", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 54.25, "units": 1, "discount": 0.0, "ad_spend": 7.16, "visits": 341, "delivery": 2, "rating": 4.09, "revenue": 54.16, "cost": 29.49, "profit": 15.93}, {"order_id": "BI-0096", "date": "2025-04-06", "month": "Apr", "region": "East", "segment": "Business Account", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 90.71, "units": 2, "discount": 0.03, "ad_spend": 33.12, "visits": 597, "delivery": 2, "rating": 4.04, "revenue": 176.61, "cost": 106.42, "profit": 47.18}, {"order_id": "BI-0097", "date": "2025-04-07", "month": "Apr", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 184.77, "units": 3, "discount": 0.145, "ad_spend": 122.93, "visits": 1012, "delivery": 2, "rating": 4.8, "revenue": 466.28, "cost": 353.08, "profit": 40.79}, {"order_id": "BI-0098", "date": "2025-04-08", "month": "Apr", "region": "South", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 34.69, "units": 4, "discount": 0.111, "ad_spend": 80.66, "visits": 701, "delivery": 4, "rating": 4.31, "revenue": 121.04, "cost": 64.63, "profit": 2.45}, {"order_id": "BI-0099", "date": "2025-04-09", "month": "Apr", "region": "South", "segment": "New Customer", "channel": "Email", "category": "Sports", "unit_price": 118.74, "units": 2, "discount": 0.091, "ad_spend": 32.92, "visits": 566, "delivery": 4, "rating": 4.81, "revenue": 212.69, "cost": 132.32, "profit": 52.67}, {"order_id": "BI-0100", "date": "2025-04-10", "month": "Apr", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 125.76, "units": 1, "discount": 0.042, "ad_spend": 26.55, "visits": 424, "delivery": 1, "rating": 4.79, "revenue": 121.63, "cost": 65.95, "profit": 38.68}, {"order_id": "BI-0101", "date": "2025-04-11", "month": "Apr", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 63.28, "units": 2, "discount": 0.106, "ad_spend": 27.1, "visits": 520, "delivery": 5, "rating": 3.72, "revenue": 107.89, "cost": 70.93, "profit": 10.06}, {"order_id": "BI-0102", "date": "2025-04-12", "month": "Apr", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 45.65, "units": 2, "discount": 0.041, "ad_spend": 33.57, "visits": 467, "delivery": 5, "rating": 3.3, "revenue": 83.41, "cost": 48.81, "profit": 4.13}, {"order_id": "BI-0103", "date": "2025-04-13", "month": "Apr", "region": "Central", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 53.42, "units": 3, "discount": 0.113, "ad_spend": 91.35, "visits": 834, "delivery": 3, "rating": 4.15, "revenue": 133.23, "cost": 84.0, "profit": -8.21}, {"order_id": "BI-0104", "date": "2025-04-14", "month": "Apr", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 182.92, "units": 2, "discount": 0.0, "ad_spend": 33.36, "visits": 565, "delivery": 3, "rating": 4.57, "revenue": 372.69, "cost": 254.49, "profit": 92.65}, {"order_id": "BI-0105", "date": "2025-04-15", "month": "Apr", "region": "Central", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 33.29, "units": 5, "discount": 0.082, "ad_spend": 102.9, "visits": 876, "delivery": 4, "rating": 4.14, "revenue": 152.22, "cost": 74.24, "profit": 11.78}, {"order_id": "BI-0106", "date": "2025-04-16", "month": "Apr", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 200.52, "units": 2, "discount": 0.066, "ad_spend": 54.43, "visits": 540, "delivery": 4, "rating": 4.26, "revenue": 388.17, "cost": 256.16, "profit": 92.47}, {"order_id": "BI-0107", "date": "2025-04-17", "month": "Apr", "region": "South", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 72.48, "units": 2, "discount": 0.144, "ad_spend": 118.92, "visits": 802, "delivery": 4, "rating": 4.41, "revenue": 124.03, "cost": 76.35, "profit": -27.32}, {"order_id": "BI-0108", "date": "2025-04-18", "month": "Apr", "region": "East", "segment": "Returning Customer", "channel": "Marketplace", "category": "Fashion", "unit_price": 62.52, "units": 2, "discount": 0.0, "ad_spend": 67.07, "visits": 600, "delivery": 1, "rating": 4.62, "revenue": 119.61, "cost": 65.79, "profit": 14.53}, {"order_id": "BI-0109", "date": "2025-04-19", "month": "Apr", "region": "East", "segment": "Business Account", "channel": "Email", "category": "Electronics", "unit_price": 256.93, "units": 2, "discount": 0.055, "ad_spend": 43.32, "visits": 666, "delivery": 3, "rating": 4.55, "revenue": 508.83, "cost": 345.46, "profit": 132.34}, {"order_id": "BI-0110", "date": "2025-04-20", "month": "Apr", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 37.96, "units": 2, "discount": 0.073, "ad_spend": 24.61, "visits": 573, "delivery": 2, "rating": 5.0, "revenue": 73.94, "cost": 35.8, "profit": 19.81}, {"order_id": "BI-0111", "date": "2025-04-21", "month": "Apr", "region": "North", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 63.37, "units": 2, "discount": 0.092, "ad_spend": 95.5, "visits": 827, "delivery": 4, "rating": 4.33, "revenue": 118.82, "cost": 68.03, "profit": -11.34}, {"order_id": "BI-0112", "date": "2025-04-22", "month": "Apr", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 215.97, "units": 1, "discount": 0.013, "ad_spend": 29.37, "visits": 456, "delivery": 3, "rating": 3.32, "revenue": 222.77, "cost": 143.44, "profit": 55.98}, {"order_id": "BI-0113", "date": "2025-04-23", "month": "Apr", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 130.02, "units": 2, "discount": 0.131, "ad_spend": 25.22, "visits": 532, "delivery": 2, "rating": 4.4, "revenue": 224.91, "cost": 141.04, "profit": 65.2}, {"order_id": "BI-0114", "date": "2025-04-24", "month": "Apr", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 122.71, "units": 3, "discount": 0.103, "ad_spend": 102.14, "visits": 758, "delivery": 2, "rating": 4.67, "revenue": 330.93, "cost": 193.36, "profit": 76.6}, {"order_id": "BI-0115", "date": "2025-04-25", "month": "Apr", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 153.04, "units": 1, "discount": 0.09, "ad_spend": 90.25, "visits": 737, "delivery": 3, "rating": 5.0, "revenue": 137.16, "cost": 110.28, "profit": -29.96}, {"order_id": "BI-0116", "date": "2025-04-26", "month": "Apr", "region": "South", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 121.59, "units": 1, "discount": 0.042, "ad_spend": 59.0, "visits": 522, "delivery": 4, "rating": 4.41, "revenue": 116.42, "cost": 65.42, "profit": 8.95}, {"order_id": "BI-0117", "date": "2025-04-27", "month": "Apr", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 94.4, "units": 3, "discount": 0.125, "ad_spend": 74.3, "visits": 741, "delivery": 3, "rating": 4.81, "revenue": 245.74, "cost": 158.49, "profit": 39.19}, {"order_id": "BI-0118", "date": "2025-04-28", "month": "Apr", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 94.14, "units": 3, "discount": 0.119, "ad_spend": 96.22, "visits": 695, "delivery": 2, "rating": 4.58, "revenue": 261.8, "cost": 161.99, "profit": 42.09}, {"order_id": "BI-0119", "date": "2025-04-29", "month": "Apr", "region": "Central", "segment": "Business Account", "channel": "Email", "category": "Fashion", "unit_price": 73.42, "units": 3, "discount": 0.105, "ad_spend": 31.61, "visits": 577, "delivery": 4, "rating": 3.52, "revenue": 201.47, "cost": 115.77, "profit": 58.71}, {"order_id": "BI-0120", "date": "2025-04-30", "month": "Apr", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 75.51, "units": 2, "discount": 0.0, "ad_spend": 33.49, "visits": 594, "delivery": 3, "rating": 4.72, "revenue": 150.39, "cost": 91.77, "profit": 33.0}, {"order_id": "BI-0121", "date": "2025-05-01", "month": "May", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 77.61, "units": 2, "discount": 0.065, "ad_spend": 42.12, "visits": 509, "delivery": 4, "rating": 3.87, "revenue": 140.88, "cost": 92.46, "profit": 15.65}, {"order_id": "BI-0122", "date": "2025-05-02", "month": "May", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 186.31, "units": 1, "discount": 0.03, "ad_spend": 30.3, "visits": 438, "delivery": 2, "rating": 4.49, "revenue": 169.27, "cost": 126.8, "profit": 21.0}, {"order_id": "BI-0123", "date": "2025-05-03", "month": "May", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 73.02, "units": 3, "discount": 0.101, "ad_spend": 72.28, "visits": 644, "delivery": 3, "rating": 4.85, "revenue": 201.27, "cost": 111.11, "profit": 43.21}, {"order_id": "BI-0124", "date": "2025-05-04", "month": "May", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 175.06, "units": 2, "discount": 0.084, "ad_spend": 77.27, "visits": 670, "delivery": 3, "rating": 4.17, "revenue": 326.5, "cost": 240.76, "profit": 36.04}, {"order_id": "BI-0125", "date": "2025-05-05", "month": "May", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 91.23, "units": 2, "discount": 0.134, "ad_spend": 90.39, "visits": 687, "delivery": 5, "rating": 4.37, "revenue": 156.59, "cost": 99.01, "profit": -4.13}, {"order_id": "BI-0126", "date": "2025-05-06", "month": "May", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 283.44, "units": 1, "discount": 0.069, "ad_spend": 7.79, "visits": 341, "delivery": 4, "rating": 4.0, "revenue": 264.48, "cost": 197.88, "profit": 52.71}, {"order_id": "BI-0127", "date": "2025-05-07", "month": "May", "region": "North", "segment": "Business Account", "channel": "Social Media", "category": "Fashion", "unit_price": 73.41, "units": 3, "discount": 0.103, "ad_spend": 98.63, "visits": 708, "delivery": 2, "rating": 4.48, "revenue": 199.75, "cost": 118.86, "profit": 21.84}, {"order_id": "BI-0128", "date": "2025-05-08", "month": "May", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 26.99, "units": 3, "discount": 0.108, "ad_spend": 43.52, "visits": 593, "delivery": 2, "rating": 4.58, "revenue": 75.64, "cost": 36.21, "profit": 10.7}, {"order_id": "BI-0129", "date": "2025-05-09", "month": "May", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 89.31, "units": 2, "discount": 0.042, "ad_spend": 13.06, "visits": 459, "delivery": 2, "rating": 4.69, "revenue": 187.52, "cost": 94.46, "profit": 81.07}, {"order_id": "BI-0130", "date": "2025-05-10", "month": "May", "region": "West", "segment": "Returning Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 217.11, "units": 2, "discount": 0.07, "ad_spend": 49.03, "visits": 543, "delivery": 3, "rating": 3.87, "revenue": 411.05, "cost": 292.91, "profit": 83.97}, {"order_id": "BI-0131", "date": "2025-05-11", "month": "May", "region": "South", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 57.0, "units": 2, "discount": 0.067, "ad_spend": 29.95, "visits": 519, "delivery": 4, "rating": 4.13, "revenue": 104.02, "cost": 59.8, "profit": 18.15}, {"order_id": "BI-0132", "date": "2025-05-12", "month": "May", "region": "South", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 102.98, "units": 2, "discount": 0.002, "ad_spend": 17.21, "visits": 366, "delivery": 4, "rating": 4.11, "revenue": 191.33, "cost": 114.08, "profit": 58.18}, {"order_id": "BI-0133", "date": "2025-05-13", "month": "May", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Sports", "unit_price": 104.01, "units": 2, "discount": 0.187, "ad_spend": 39.26, "visits": 592, "delivery": 5, "rating": 4.21, "revenue": 153.81, "cost": 116.98, "profit": 3.23}, {"order_id": "BI-0134", "date": "2025-05-14", "month": "May", "region": "North", "segment": "Business Account", "channel": "Marketplace", "category": "Fashion", "unit_price": 54.56, "units": 3, "discount": 0.091, "ad_spend": 35.49, "visits": 576, "delivery": 1, "rating": 4.28, "revenue": 155.46, "cost": 85.41, "profit": 48.13}, {"order_id": "BI-0135", "date": "2025-05-15", "month": "May", "region": "Central", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 107.17, "units": 1, "discount": 0.089, "ad_spend": 68.36, "visits": 543, "delivery": 3, "rating": 4.75, "revenue": 96.9, "cost": 57.25, "profit": -5.15}, {"order_id": "BI-0136", "date": "2025-05-16", "month": "May", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 58.96, "units": 1, "discount": 0.073, "ad_spend": 5.0, "visits": 388, "delivery": 4, "rating": 4.1, "revenue": 52.93, "cost": 29.99, "profit": 10.59}, {"order_id": "BI-0137", "date": "2025-05-17", "month": "May", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 33.3, "units": 5, "discount": 0.179, "ad_spend": 125.78, "visits": 940, "delivery": 3, "rating": 4.21, "revenue": 130.86, "cost": 72.17, "profit": -17.69}, {"order_id": "BI-0138", "date": "2025-05-18", "month": "May", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 38.33, "units": 2, "discount": 0.034, "ad_spend": 70.57, "visits": 633, "delivery": 4, "rating": 4.71, "revenue": 70.05, "cost": 34.75, "profit": -13.12}, {"order_id": "BI-0139", "date": "2025-05-19", "month": "May", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 41.14, "units": 2, "discount": 0.016, "ad_spend": 5.0, "visits": 458, "delivery": 4, "rating": 3.84, "revenue": 84.28, "cost": 34.87, "profit": 37.06}, {"order_id": "BI-0140", "date": "2025-05-20", "month": "May", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 108.05, "units": 2, "discount": 0.079, "ad_spend": 64.14, "visits": 612, "delivery": 2, "rating": 4.5, "revenue": 196.69, "cost": 117.15, "profit": 39.47}, {"order_id": "BI-0141", "date": "2025-05-21", "month": "May", "region": "West", "segment": "New Customer", "channel": "Marketplace", "category": "Beauty", "unit_price": 29.1, "units": 2, "discount": 0.104, "ad_spend": 45.71, "visits": 462, "delivery": 3, "rating": 4.4, "revenue": 51.2, "cost": 26.79, "profit": -7.94}, {"order_id": "BI-0142", "date": "2025-05-22", "month": "May", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 70.03, "units": 3, "discount": 0.163, "ad_spend": 48.85, "visits": 562, "delivery": 4, "rating": 4.65, "revenue": 169.73, "cost": 108.38, "profit": 24.88}, {"order_id": "BI-0143", "date": "2025-05-23", "month": "May", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 39.0, "units": 3, "discount": 0.103, "ad_spend": 105.42, "visits": 808, "delivery": 4, "rating": 4.0, "revenue": 104.99, "cost": 54.27, "profit": -16.86}, {"order_id": "BI-0144", "date": "2025-05-24", "month": "May", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 118.73, "units": 1, "discount": 0.037, "ad_spend": 5.0, "visits": 381, "delivery": 4, "rating": 4.25, "revenue": 116.57, "cost": 63.72, "profit": 40.5}, {"order_id": "BI-0145", "date": "2025-05-25", "month": "May", "region": "North", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 128.65, "units": 2, "discount": 0.012, "ad_spend": 31.8, "visits": 587, "delivery": 3, "rating": 4.41, "revenue": 261.09, "cost": 139.67, "profit": 96.73}, {"order_id": "BI-0146", "date": "2025-05-26", "month": "May", "region": "North", "segment": "New Customer", "channel": "Email", "category": "Sports", "unit_price": 85.87, "units": 1, "discount": 0.083, "ad_spend": 13.5, "visits": 533, "delivery": 4, "rating": 4.77, "revenue": 81.04, "cost": 49.58, "profit": 14.44}, {"order_id": "BI-0147", "date": "2025-05-27", "month": "May", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 89.39, "units": 2, "discount": 0.107, "ad_spend": 75.86, "visits": 748, "delivery": 4, "rating": 4.0, "revenue": 145.89, "cost": 97.41, "profit": -2.85}, {"order_id": "BI-0148", "date": "2025-05-28", "month": "May", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 237.0, "units": 2, "discount": 0.081, "ad_spend": 75.64, "visits": 721, "delivery": 3, "rating": 4.65, "revenue": 436.36, "cost": 323.98, "profit": 63.58}, {"order_id": "BI-0149", "date": "2025-05-29", "month": "May", "region": "Central", "segment": "Business Account", "channel": "Marketplace", "category": "Beauty", "unit_price": 43.43, "units": 1, "discount": 0.0, "ad_spend": 54.93, "visits": 369, "delivery": 3, "rating": 4.76, "revenue": 40.88, "cost": 18.79, "profit": -15.33}, {"order_id": "BI-0150", "date": "2025-05-30", "month": "May", "region": "West", "segment": "Business Account", "channel": "Paid Ads", "category": "Beauty", "unit_price": 33.36, "units": 4, "discount": 0.08, "ad_spend": 73.54, "visits": 743, "delivery": 4, "rating": 3.72, "revenue": 118.58, "cost": 62.77, "profit": 5.77}, {"order_id": "BI-0151", "date": "2025-05-31", "month": "May", "region": "North", "segment": "Business Account", "channel": "Paid Ads", "category": "Fashion", "unit_price": 55.06, "units": 3, "discount": 0.072, "ad_spend": 82.81, "visits": 792, "delivery": 2, "rating": 3.67, "revenue": 142.24, "cost": 83.63, "profit": 8.26}, {"order_id": "BI-0152", "date": "2025-06-01", "month": "Jun", "region": "South", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 101.37, "units": 2, "discount": 0.038, "ad_spend": 99.42, "visits": 781, "delivery": 3, "rating": 4.67, "revenue": 192.83, "cost": 109.22, "profit": 21.74}, {"order_id": "BI-0153", "date": "2025-06-02", "month": "Jun", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 216.01, "units": 1, "discount": 0.067, "ad_spend": 6.78, "visits": 386, "delivery": 4, "rating": 4.63, "revenue": 199.07, "cost": 147.42, "profit": 38.31}, {"order_id": "BI-0154", "date": "2025-06-03", "month": "Jun", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 222.31, "units": 2, "discount": 0.175, "ad_spend": 38.91, "visits": 600, "delivery": 3, "rating": 4.44, "revenue": 355.23, "cost": 299.28, "profit": 27.35}, {"order_id": "BI-0155", "date": "2025-06-04", "month": "Jun", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 215.84, "units": 3, "discount": 0.119, "ad_spend": 102.03, "visits": 878, "delivery": 3, "rating": 4.57, "revenue": 568.31, "cost": 432.13, "profit": 72.87}, {"order_id": "BI-0156", "date": "2025-06-05", "month": "Jun", "region": "Central", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 43.12, "units": 3, "discount": 0.051, "ad_spend": 99.53, "visits": 725, "delivery": 3, "rating": 4.82, "revenue": 116.57, "cost": 61.83, "profit": -7.2}, {"order_id": "BI-0157", "date": "2025-06-06", "month": "Jun", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 59.85, "units": 1, "discount": 0.049, "ad_spend": 22.87, "visits": 520, "delivery": 3, "rating": 4.36, "revenue": 57.21, "cost": 31.05, "profit": 6.39}, {"order_id": "BI-0158", "date": "2025-06-07", "month": "Jun", "region": "Central", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 75.2, "units": 3, "discount": 0.083, "ad_spend": 98.7, "visits": 749, "delivery": 4, "rating": 4.21, "revenue": 212.92, "cost": 115.42, "profit": 33.62}, {"order_id": "BI-0159", "date": "2025-06-08", "month": "Jun", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 77.21, "units": 4, "discount": 0.167, "ad_spend": 106.88, "visits": 832, "delivery": 2, "rating": 4.74, "revenue": 258.3, "cost": 172.09, "profit": 22.62}, {"order_id": "BI-0160", "date": "2025-06-09", "month": "Jun", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 79.97, "units": 1, "discount": 0.07, "ad_spend": 26.6, "visits": 423, "delivery": 2, "rating": 4.13, "revenue": 79.46, "cost": 46.83, "profit": 13.21}, {"order_id": "BI-0161", "date": "2025-06-10", "month": "Jun", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 107.41, "units": 1, "discount": 0.069, "ad_spend": 19.42, "visits": 476, "delivery": 2, "rating": 3.82, "revenue": 100.27, "cost": 56.42, "profit": 28.38}, {"order_id": "BI-0162", "date": "2025-06-11", "month": "Jun", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 73.23, "units": 3, "discount": 0.114, "ad_spend": 102.33, "visits": 791, "delivery": 4, "rating": 4.62, "revenue": 191.11, "cost": 124.62, "profit": 0.61}, {"order_id": "BI-0163", "date": "2025-06-12", "month": "Jun", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 71.12, "units": 3, "discount": 0.093, "ad_spend": 84.74, "visits": 720, "delivery": 3, "rating": 3.8, "revenue": 195.44, "cost": 104.29, "profit": 37.34}, {"order_id": "BI-0164", "date": "2025-06-13", "month": "Jun", "region": "West", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 99.46, "units": 2, "discount": 0.053, "ad_spend": 95.22, "visits": 707, "delivery": 4, "rating": 4.44, "revenue": 189.81, "cost": 111.28, "profit": 16.56}, {"order_id": "BI-0165", "date": "2025-06-14", "month": "Jun", "region": "East", "segment": "Business Account", "channel": "Paid Ads", "category": "Fashion", "unit_price": 65.34, "units": 4, "discount": 0.119, "ad_spend": 108.91, "visits": 856, "delivery": 3, "rating": 4.34, "revenue": 250.48, "cost": 133.43, "profit": 49.95}, {"order_id": "BI-0166", "date": "2025-06-15", "month": "Jun", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 58.77, "units": 2, "discount": 0.061, "ad_spend": 13.2, "visits": 483, "delivery": 3, "rating": 4.73, "revenue": 115.89, "cost": 60.92, "profit": 40.51}, {"order_id": "BI-0167", "date": "2025-06-16", "month": "Jun", "region": "Central", "segment": "New Customer", "channel": "Email", "category": "Sports", "unit_price": 122.36, "units": 1, "discount": 0.087, "ad_spend": 22.5, "visits": 452, "delivery": 4, "rating": 4.25, "revenue": 107.93, "cost": 64.77, "profit": 21.19}, {"order_id": "BI-0168", "date": "2025-06-17", "month": "Jun", "region": "Central", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 35.62, "units": 3, "discount": 0.074, "ad_spend": 107.19, "visits": 723, "delivery": 5, "rating": 4.46, "revenue": 103.9, "cost": 52.82, "profit": -19.88}, {"order_id": "BI-0169", "date": "2025-06-18", "month": "Jun", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 72.59, "units": 3, "discount": 0.09, "ad_spend": 75.6, "visits": 683, "delivery": 4, "rating": 4.44, "revenue": 203.06, "cost": 124.66, "profit": 27.22}, {"order_id": "BI-0170", "date": "2025-06-19", "month": "Jun", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 64.05, "units": 1, "discount": 0.051, "ad_spend": 5.0, "visits": 370, "delivery": 5, "rating": 4.46, "revenue": 58.54, "cost": 32.14, "profit": 11.65}, {"order_id": "BI-0171", "date": "2025-06-20", "month": "Jun", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 76.7, "units": 2, "discount": 0.042, "ad_spend": 20.25, "visits": 414, "delivery": 3, "rating": 4.46, "revenue": 153.24, "cost": 88.06, "profit": 46.84}, {"order_id": "BI-0172", "date": "2025-06-21", "month": "Jun", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 43.89, "units": 3, "discount": 0.084, "ad_spend": 34.23, "visits": 596, "delivery": 3, "rating": 4.48, "revenue": 120.1, "cost": 57.91, "profit": 36.17}, {"order_id": "BI-0173", "date": "2025-06-22", "month": "Jun", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Sports", "unit_price": 113.09, "units": 2, "discount": 0.082, "ad_spend": 20.71, "visits": 495, "delivery": 4, "rating": 5.0, "revenue": 211.78, "cost": 119.71, "profit": 71.08}, {"order_id": "BI-0174", "date": "2025-06-23", "month": "Jun", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 187.26, "units": 1, "discount": 0.047, "ad_spend": 19.3, "visits": 423, "delivery": 4, "rating": 4.07, "revenue": 185.21, "cost": 129.53, "profit": 35.47}, {"order_id": "BI-0175", "date": "2025-06-24", "month": "Jun", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 207.87, "units": 1, "discount": 0.014, "ad_spend": 40.98, "visits": 557, "delivery": 1, "rating": 4.95, "revenue": 207.74, "cost": 142.57, "profit": 40.23}, {"order_id": "BI-0176", "date": "2025-06-25", "month": "Jun", "region": "East", "segment": "Business Account", "channel": "Marketplace", "category": "Electronics", "unit_price": 222.04, "units": 1, "discount": 0.063, "ad_spend": 47.49, "visits": 589, "delivery": 3, "rating": 4.28, "revenue": 204.22, "cost": 153.18, "profit": 17.72}, {"order_id": "BI-0177", "date": "2025-06-26", "month": "Jun", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 104.24, "units": 1, "discount": 0.005, "ad_spend": 5.0, "visits": 380, "delivery": 1, "rating": 5.0, "revenue": 108.27, "cost": 61.04, "profit": 42.08}, {"order_id": "BI-0178", "date": "2025-06-27", "month": "Jun", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 89.56, "units": 3, "discount": 0.035, "ad_spend": 87.48, "visits": 744, "delivery": 4, "rating": 4.2, "revenue": 268.97, "cost": 169.86, "profit": 41.4}, {"order_id": "BI-0179", "date": "2025-06-28", "month": "Jun", "region": "Central", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 199.05, "units": 1, "discount": 0.0, "ad_spend": 5.0, "visits": 398, "delivery": 4, "rating": 4.95, "revenue": 209.32, "cost": 136.59, "profit": 60.39}, {"order_id": "BI-0180", "date": "2025-06-29", "month": "Jun", "region": "Central", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 62.75, "units": 3, "discount": 0.113, "ad_spend": 103.93, "visits": 820, "delivery": 6, "rating": 4.02, "revenue": 175.42, "cost": 101.8, "profit": 2.06}, {"order_id": "BI-0181", "date": "2025-06-30", "month": "Jun", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 72.8, "units": 2, "discount": 0.056, "ad_spend": 46.46, "visits": 490, "delivery": 2, "rating": 4.6, "revenue": 134.75, "cost": 75.93, "profit": 28.46}, {"order_id": "BI-0182", "date": "2025-07-01", "month": "Jul", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 158.22, "units": 1, "discount": 0.083, "ad_spend": 96.63, "visits": 663, "delivery": 5, "rating": 3.85, "revenue": 141.02, "cost": 113.25, "profit": -37.37}, {"order_id": "BI-0183", "date": "2025-07-02", "month": "Jul", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 81.14, "units": 2, "discount": 0.049, "ad_spend": 73.56, "visits": 641, "delivery": 3, "rating": 4.85, "revenue": 164.1, "cost": 86.14, "profit": 30.31}, {"order_id": "BI-0184", "date": "2025-07-03", "month": "Jul", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 187.74, "units": 3, "discount": 0.086, "ad_spend": 115.15, "visits": 877, "delivery": 2, "rating": 4.43, "revenue": 547.34, "cost": 378.24, "profit": 100.96}, {"order_id": "BI-0185", "date": "2025-07-04", "month": "Jul", "region": "West", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 120.43, "units": 1, "discount": 0.08, "ad_spend": 68.44, "visits": 536, "delivery": 3, "rating": 4.59, "revenue": 103.62, "cost": 67.79, "profit": -9.01}, {"order_id": "BI-0186", "date": "2025-07-05", "month": "Jul", "region": "East", "segment": "Returning Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 187.64, "units": 1, "discount": 0.081, "ad_spend": 15.12, "visits": 413, "delivery": 2, "rating": 4.45, "revenue": 176.53, "cost": 125.6, "profit": 37.82}, {"order_id": "BI-0187", "date": "2025-07-06", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 88.25, "units": 2, "discount": 0.06, "ad_spend": 80.37, "visits": 675, "delivery": 3, "rating": 3.6, "revenue": 159.99, "cost": 102.43, "profit": 6.15}, {"order_id": "BI-0188", "date": "2025-07-07", "month": "Jul", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 40.81, "units": 2, "discount": 0.068, "ad_spend": 56.59, "visits": 441, "delivery": 2, "rating": 4.46, "revenue": 74.75, "cost": 36.86, "profit": 1.97}, {"order_id": "BI-0189", "date": "2025-07-08", "month": "Jul", "region": "North", "segment": "Returning Customer", "channel": "Marketplace", "category": "Beauty", "unit_price": 42.69, "units": 2, "discount": 0.017, "ad_spend": 77.8, "visits": 560, "delivery": 3, "rating": 4.4, "revenue": 80.64, "cost": 38.79, "profit": -8.13}, {"order_id": "BI-0190", "date": "2025-07-09", "month": "Jul", "region": "North", "segment": "Business Account", "channel": "Marketplace", "category": "Beauty", "unit_price": 41.74, "units": 3, "discount": 0.096, "ad_spend": 27.51, "visits": 592, "delivery": 2, "rating": 4.32, "revenue": 116.91, "cost": 55.29, "profit": 41.69}, {"order_id": "BI-0191", "date": "2025-07-10", "month": "Jul", "region": "North", "segment": "Business Account", "channel": "Marketplace", "category": "Beauty", "unit_price": 35.24, "units": 2, "discount": 0.105, "ad_spend": 46.61, "visits": 459, "delivery": 1, "rating": 4.12, "revenue": 62.7, "cost": 30.4, "profit": 4.27}, {"order_id": "BI-0192", "date": "2025-07-11", "month": "Jul", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 35.9, "units": 1, "discount": 0.051, "ad_spend": 31.92, "visits": 486, "delivery": 3, "rating": 4.6, "revenue": 34.13, "cost": 15.01, "profit": -5.63}, {"order_id": "BI-0193", "date": "2025-07-12", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 64.72, "units": 2, "discount": 0.058, "ad_spend": 5.0, "visits": 415, "delivery": 3, "rating": 4.47, "revenue": 128.71, "cost": 67.3, "profit": 51.45}, {"order_id": "BI-0194", "date": "2025-07-13", "month": "Jul", "region": "Central", "segment": "New Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 83.75, "units": 3, "discount": 0.177, "ad_spend": 114.63, "visits": 748, "delivery": 3, "rating": 4.78, "revenue": 208.75, "cost": 150.88, "profit": -12.37}, {"order_id": "BI-0195", "date": "2025-07-14", "month": "Jul", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 105.95, "units": 2, "discount": 0.122, "ad_spend": 76.46, "visits": 640, "delivery": 4, "rating": 4.43, "revenue": 187.03, "cost": 114.15, "profit": 21.23}, {"order_id": "BI-0196", "date": "2025-07-15", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Sports", "unit_price": 107.18, "units": 2, "discount": 0.182, "ad_spend": 31.13, "visits": 471, "delivery": 5, "rating": 4.51, "revenue": 172.66, "cost": 122.36, "profit": 21.18}, {"order_id": "BI-0197", "date": "2025-07-16", "month": "Jul", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 123.8, "units": 3, "discount": 0.094, "ad_spend": 97.62, "visits": 737, "delivery": 1, "rating": 4.81, "revenue": 343.01, "cost": 207.19, "profit": 79.73}, {"order_id": "BI-0198", "date": "2025-07-17", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 166.28, "units": 2, "discount": 0.161, "ad_spend": 64.39, "visits": 650, "delivery": 2, "rating": 4.47, "revenue": 255.83, "cost": 229.22, "profit": -13.6}, {"order_id": "BI-0199", "date": "2025-07-18", "month": "Jul", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 65.36, "units": 2, "discount": 0.063, "ad_spend": 46.82, "visits": 578, "delivery": 5, "rating": 4.67, "revenue": 123.53, "cost": 69.02, "profit": 16.76}, {"order_id": "BI-0200", "date": "2025-07-19", "month": "Jul", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 208.15, "units": 2, "discount": 0.056, "ad_spend": 46.52, "visits": 558, "delivery": 3, "rating": 4.01, "revenue": 414.39, "cost": 273.27, "profit": 108.34}, {"order_id": "BI-0201", "date": "2025-07-20", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 76.0, "units": 4, "discount": 0.123, "ad_spend": 52.9, "visits": 640, "delivery": 4, "rating": 4.06, "revenue": 271.65, "cost": 162.02, "profit": 70.93}, {"order_id": "BI-0202", "date": "2025-07-21", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 79.45, "units": 2, "discount": 0.106, "ad_spend": 10.55, "visits": 471, "delivery": 3, "rating": 4.5, "revenue": 136.91, "cost": 88.96, "profit": 34.94}, {"order_id": "BI-0203", "date": "2025-07-22", "month": "Jul", "region": "Central", "segment": "New Customer", "channel": "Email", "category": "Beauty", "unit_price": 36.21, "units": 2, "discount": 0.099, "ad_spend": 49.83, "visits": 463, "delivery": 3, "rating": 4.4, "revenue": 63.25, "cost": 34.48, "profit": -5.84}, {"order_id": "BI-0204", "date": "2025-07-23", "month": "Jul", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 244.1, "units": 2, "discount": 0.085, "ad_spend": 60.06, "visits": 631, "delivery": 3, "rating": 4.42, "revenue": 429.28, "cost": 331.33, "profit": 57.72}, {"order_id": "BI-0205", "date": "2025-07-24", "month": "Jul", "region": "Central", "segment": "Business Account", "channel": "Social Media", "category": "Electronics", "unit_price": 204.61, "units": 2, "discount": 0.078, "ad_spend": 91.73, "visits": 683, "delivery": 3, "rating": 4.56, "revenue": 362.48, "cost": 268.95, "profit": 35.88}, {"order_id": "BI-0206", "date": "2025-07-25", "month": "Jul", "region": "East", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 183.35, "units": 1, "discount": 0.134, "ad_spend": 25.24, "visits": 436, "delivery": 4, "rating": 3.98, "revenue": 155.11, "cost": 125.85, "profit": 5.78}, {"order_id": "BI-0207", "date": "2025-07-26", "month": "Jul", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 70.43, "units": 2, "discount": 0.078, "ad_spend": 57.4, "visits": 605, "delivery": 3, "rating": 4.29, "revenue": 129.78, "cost": 79.82, "profit": 11.2}, {"order_id": "BI-0208", "date": "2025-07-27", "month": "Jul", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 45.14, "units": 4, "discount": 0.113, "ad_spend": 90.69, "visits": 830, "delivery": 1, "rating": 4.72, "revenue": 158.77, "cost": 84.08, "profit": 22.41}, {"order_id": "BI-0209", "date": "2025-07-28", "month": "Jul", "region": "West", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 29.29, "units": 1, "discount": 0.095, "ad_spend": 15.68, "visits": 386, "delivery": 2, "rating": 4.46, "revenue": 27.99, "cost": 13.62, "profit": 0.94}, {"order_id": "BI-0210", "date": "2025-07-29", "month": "Jul", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 71.52, "units": 2, "discount": 0.081, "ad_spend": 50.43, "visits": 623, "delivery": 3, "rating": 4.37, "revenue": 116.39, "cost": 75.16, "profit": 6.29}, {"order_id": "BI-0211", "date": "2025-07-30", "month": "Jul", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 110.89, "units": 1, "discount": 0.045, "ad_spend": 5.0, "visits": 391, "delivery": 3, "rating": 4.71, "revenue": 106.64, "cost": 63.74, "profit": 32.95}, {"order_id": "BI-0212", "date": "2025-07-31", "month": "Jul", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 46.4, "units": 3, "discount": 0.084, "ad_spend": 53.71, "visits": 518, "delivery": 2, "rating": 4.1, "revenue": 125.13, "cost": 62.58, "profit": 28.21}, {"order_id": "BI-0213", "date": "2025-08-01", "month": "Aug", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 70.05, "units": 2, "discount": 0.06, "ad_spend": 95.06, "visits": 616, "delivery": 2, "rating": 4.87, "revenue": 137.18, "cost": 71.66, "profit": 8.45}, {"order_id": "BI-0214", "date": "2025-08-02", "month": "Aug", "region": "North", "segment": "Business Account", "channel": "Social Media", "category": "Electronics", "unit_price": 212.87, "units": 2, "discount": 0.033, "ad_spend": 62.91, "visits": 640, "delivery": 2, "rating": 4.65, "revenue": 423.9, "cost": 298.34, "profit": 86.16}, {"order_id": "BI-0215", "date": "2025-08-03", "month": "Aug", "region": "Central", "segment": "Business Account", "channel": "Social Media", "category": "Beauty", "unit_price": 29.69, "units": 3, "discount": 0.066, "ad_spend": 60.24, "visits": 631, "delivery": 5, "rating": 4.51, "revenue": 85.15, "cost": 39.74, "profit": 0.27}, {"order_id": "BI-0216", "date": "2025-08-04", "month": "Aug", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 184.53, "units": 2, "discount": 0.116, "ad_spend": 86.65, "visits": 778, "delivery": 3, "rating": 4.53, "revenue": 331.15, "cost": 251.79, "profit": 24.51}, {"order_id": "BI-0217", "date": "2025-08-05", "month": "Aug", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 58.87, "units": 3, "discount": 0.096, "ad_spend": 121.63, "visits": 778, "delivery": 4, "rating": 4.59, "revenue": 157.98, "cost": 93.68, "profit": -12.2}, {"order_id": "BI-0218", "date": "2025-08-06", "month": "Aug", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 86.11, "units": 1, "discount": 0.02, "ad_spend": 5.0, "visits": 452, "delivery": 1, "rating": 4.69, "revenue": 82.24, "cost": 49.31, "profit": 27.78}, {"order_id": "BI-0219", "date": "2025-08-07", "month": "Aug", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 228.97, "units": 1, "discount": 0.077, "ad_spend": 5.0, "visits": 448, "delivery": 2, "rating": 4.61, "revenue": 202.56, "cost": 155.75, "profit": 39.26}, {"order_id": "BI-0220", "date": "2025-08-08", "month": "Aug", "region": "North", "segment": "Business Account", "channel": "Email", "category": "Sports", "unit_price": 122.94, "units": 2, "discount": 0.088, "ad_spend": 79.89, "visits": 713, "delivery": 2, "rating": 4.6, "revenue": 229.23, "cost": 136.33, "profit": 44.16}, {"order_id": "BI-0221", "date": "2025-08-09", "month": "Aug", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 59.82, "units": 2, "discount": 0.146, "ad_spend": 45.45, "visits": 515, "delivery": 3, "rating": 4.21, "revenue": 106.2, "cost": 61.87, "profit": 12.14}, {"order_id": "BI-0222", "date": "2025-08-10", "month": "Aug", "region": "South", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 111.67, "units": 2, "discount": 0.048, "ad_spend": 48.36, "visits": 510, "delivery": 3, "rating": 3.84, "revenue": 205.98, "cost": 135.99, "profit": 36.2}, {"order_id": "BI-0223", "date": "2025-08-11", "month": "Aug", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 29.59, "units": 2, "discount": 0.07, "ad_spend": 21.16, "visits": 403, "delivery": 2, "rating": 3.9, "revenue": 50.1, "cost": 25.4, "profit": 8.26}, {"order_id": "BI-0224", "date": "2025-08-12", "month": "Aug", "region": "West", "segment": "New Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 96.64, "units": 3, "discount": 0.126, "ad_spend": 111.09, "visits": 795, "delivery": 3, "rating": 4.53, "revenue": 249.26, "cost": 166.19, "profit": 14.77}, {"order_id": "BI-0225", "date": "2025-08-13", "month": "Aug", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 78.25, "units": 1, "discount": 0.027, "ad_spend": 8.51, "visits": 304, "delivery": 4, "rating": 4.3, "revenue": 78.61, "cost": 44.49, "profit": 19.84}, {"order_id": "BI-0226", "date": "2025-08-14", "month": "Aug", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 110.26, "units": 3, "discount": 0.14, "ad_spend": 95.74, "visits": 727, "delivery": 3, "rating": 4.18, "revenue": 284.47, "cost": 167.7, "profit": 56.91}, {"order_id": "BI-0227", "date": "2025-08-15", "month": "Aug", "region": "South", "segment": "New Customer", "channel": "Email", "category": "Electronics", "unit_price": 191.81, "units": 1, "discount": 0.152, "ad_spend": 16.64, "visits": 468, "delivery": 2, "rating": 4.2, "revenue": 168.51, "cost": 134.08, "profit": 20.47}, {"order_id": "BI-0228", "date": "2025-08-16", "month": "Aug", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 95.78, "units": 3, "discount": 0.161, "ad_spend": 50.65, "visits": 612, "delivery": 1, "rating": 3.97, "revenue": 237.13, "cost": 162.27, "profit": 44.6}, {"order_id": "BI-0229", "date": "2025-08-17", "month": "Aug", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 101.32, "units": 1, "discount": 0.098, "ad_spend": 67.62, "visits": 655, "delivery": 3, "rating": 4.76, "revenue": 94.16, "cost": 58.16, "profit": -8.4}, {"order_id": "BI-0230", "date": "2025-08-18", "month": "Aug", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 104.9, "units": 2, "discount": 0.126, "ad_spend": 37.05, "visits": 471, "delivery": 3, "rating": 4.54, "revenue": 183.48, "cost": 114.87, "profit": 41.03}, {"order_id": "BI-0231", "date": "2025-08-19", "month": "Aug", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 209.23, "units": 1, "discount": 0.118, "ad_spend": 53.5, "visits": 524, "delivery": 4, "rating": 4.46, "revenue": 183.59, "cost": 139.24, "profit": 5.32}, {"order_id": "BI-0232", "date": "2025-08-20", "month": "Aug", "region": "South", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 104.1, "units": 1, "discount": 0.004, "ad_spend": 24.67, "visits": 411, "delivery": 5, "rating": 4.27, "revenue": 106.37, "cost": 60.52, "profit": 20.28}, {"order_id": "BI-0233", "date": "2025-08-21", "month": "Aug", "region": "Central", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 93.36, "units": 4, "discount": 0.182, "ad_spend": 73.22, "visits": 650, "delivery": 5, "rating": 4.51, "revenue": 286.7, "cost": 214.58, "profit": 19.85}, {"order_id": "BI-0234", "date": "2025-08-22", "month": "Aug", "region": "South", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 81.4, "units": 2, "discount": 0.203, "ad_spend": 48.31, "visits": 566, "delivery": 4, "rating": 4.7, "revenue": 126.54, "cost": 97.91, "profit": -7.55}, {"order_id": "BI-0235", "date": "2025-08-23", "month": "Aug", "region": "Central", "segment": "Business Account", "channel": "Marketplace", "category": "Fashion", "unit_price": 68.14, "units": 2, "discount": 0.123, "ad_spend": 22.94, "visits": 403, "delivery": 4, "rating": 4.27, "revenue": 113.07, "cost": 68.77, "profit": 22.08}, {"order_id": "BI-0236", "date": "2025-08-24", "month": "Aug", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 89.97, "units": 2, "discount": 0.128, "ad_spend": 76.43, "visits": 668, "delivery": 3, "rating": 4.14, "revenue": 164.77, "cost": 103.93, "profit": 11.61}, {"order_id": "BI-0237", "date": "2025-08-25", "month": "Aug", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 94.07, "units": 3, "discount": 0.118, "ad_spend": 103.74, "visits": 850, "delivery": 3, "rating": 4.1, "revenue": 248.06, "cost": 161.09, "profit": 22.72}, {"order_id": "BI-0238", "date": "2025-08-26", "month": "Aug", "region": "Central", "segment": "Returning Customer", "channel": "Marketplace", "category": "Electronics", "unit_price": 215.02, "units": 1, "discount": 0.111, "ad_spend": 39.32, "visits": 575, "delivery": 4, "rating": 4.25, "revenue": 193.06, "cost": 148.44, "profit": 13.4}, {"order_id": "BI-0239", "date": "2025-08-27", "month": "Aug", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 126.73, "units": 1, "discount": 0.117, "ad_spend": 41.72, "visits": 451, "delivery": 4, "rating": 3.67, "revenue": 116.6, "cost": 68.57, "profit": 15.49}, {"order_id": "BI-0240", "date": "2025-08-28", "month": "Aug", "region": "South", "segment": "New Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 57.94, "units": 1, "discount": 0.009, "ad_spend": 33.31, "visits": 440, "delivery": 4, "rating": 4.7, "revenue": 59.55, "cost": 29.3, "profit": 2.33}, {"order_id": "BI-0241", "date": "2025-08-29", "month": "Aug", "region": "North", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 96.59, "units": 2, "discount": 0.091, "ad_spend": 81.24, "visits": 610, "delivery": 3, "rating": 4.8, "revenue": 175.97, "cost": 109.07, "profit": 15.02}, {"order_id": "BI-0242", "date": "2025-08-30", "month": "Aug", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 229.64, "units": 1, "discount": 0.107, "ad_spend": 41.88, "visits": 543, "delivery": 4, "rating": 4.12, "revenue": 198.41, "cost": 149.33, "profit": 16.44}, {"order_id": "BI-0243", "date": "2025-08-31", "month": "Aug", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 208.92, "units": 2, "discount": 0.139, "ad_spend": 39.37, "visits": 588, "delivery": 3, "rating": 4.56, "revenue": 349.93, "cost": 284.65, "profit": 36.43}, {"order_id": "BI-0244", "date": "2025-09-01", "month": "Sep", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 105.12, "units": 1, "discount": 0.069, "ad_spend": 39.18, "visits": 487, "delivery": 5, "rating": 4.11, "revenue": 96.33, "cost": 61.76, "profit": 1.01}, {"order_id": "BI-0245", "date": "2025-09-02", "month": "Sep", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 220.55, "units": 2, "discount": 0.058, "ad_spend": 74.87, "visits": 580, "delivery": 3, "rating": 4.16, "revenue": 411.05, "cost": 284.65, "profit": 78.02}, {"order_id": "BI-0246", "date": "2025-09-03", "month": "Sep", "region": "North", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 88.47, "units": 1, "discount": 0.047, "ad_spend": 57.18, "visits": 482, "delivery": 2, "rating": 4.11, "revenue": 87.86, "cost": 52.55, "profit": -0.94}, {"order_id": "BI-0247", "date": "2025-09-04", "month": "Sep", "region": "West", "segment": "Business Account", "channel": "Paid Ads", "category": "Fashion", "unit_price": 69.89, "units": 3, "discount": 0.106, "ad_spend": 110.54, "visits": 787, "delivery": 2, "rating": 3.91, "revenue": 191.64, "cost": 111.66, "profit": 14.38}, {"order_id": "BI-0248", "date": "2025-09-05", "month": "Sep", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 34.25, "units": 1, "discount": 0.0, "ad_spend": 5.0, "visits": 356, "delivery": 2, "rating": 4.52, "revenue": 32.46, "cost": 15.3, "profit": 9.61}, {"order_id": "BI-0249", "date": "2025-09-06", "month": "Sep", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 39.96, "units": 3, "discount": 0.129, "ad_spend": 64.49, "visits": 593, "delivery": 4, "rating": 4.51, "revenue": 102.16, "cost": 54.02, "profit": 3.07}, {"order_id": "BI-0250", "date": "2025-09-07", "month": "Sep", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 43.51, "units": 2, "discount": 0.004, "ad_spend": 28.39, "visits": 541, "delivery": 4, "rating": 4.9, "revenue": 80.92, "cost": 36.63, "profit": 19.07}, {"order_id": "BI-0251", "date": "2025-09-08", "month": "Sep", "region": "North", "segment": "Business Account", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 80.42, "units": 3, "discount": 0.049, "ad_spend": 106.08, "visits": 816, "delivery": 2, "rating": 4.73, "revenue": 234.41, "cost": 145.31, "profit": 25.96}, {"order_id": "BI-0252", "date": "2025-09-09", "month": "Sep", "region": "South", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 216.51, "units": 1, "discount": 0.099, "ad_spend": 54.65, "visits": 547, "delivery": 4, "rating": 3.97, "revenue": 201.86, "cost": 148.18, "profit": 14.02}, {"order_id": "BI-0253", "date": "2025-09-10", "month": "Sep", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 59.95, "units": 1, "discount": 0.062, "ad_spend": 13.33, "visits": 439, "delivery": 3, "rating": 4.31, "revenue": 53.78, "cost": 31.53, "profit": 7.71}, {"order_id": "BI-0254", "date": "2025-09-11", "month": "Sep", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 189.37, "units": 1, "discount": 0.039, "ad_spend": 19.3, "visits": 436, "delivery": 3, "rating": 4.37, "revenue": 168.03, "cost": 123.67, "profit": 26.54}, {"order_id": "BI-0255", "date": "2025-09-12", "month": "Sep", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 35.46, "units": 3, "discount": 0.127, "ad_spend": 126.39, "visits": 876, "delivery": 3, "rating": 4.83, "revenue": 96.87, "cost": 47.19, "profit": -27.04}, {"order_id": "BI-0256", "date": "2025-09-13", "month": "Sep", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 40.83, "units": 2, "discount": 0.03, "ad_spend": 29.97, "visits": 477, "delivery": 3, "rating": 4.33, "revenue": 80.99, "cost": 39.4, "profit": 17.9}, {"order_id": "BI-0257", "date": "2025-09-14", "month": "Sep", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 57.13, "units": 2, "discount": 0.115, "ad_spend": 78.72, "visits": 602, "delivery": 3, "rating": 4.58, "revenue": 101.72, "cost": 61.68, "profit": -10.45}, {"order_id": "BI-0258", "date": "2025-09-15", "month": "Sep", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 62.56, "units": 1, "discount": 0.034, "ad_spend": 83.93, "visits": 587, "delivery": 5, "rating": 4.51, "revenue": 61.86, "cost": 32.6, "profit": -28.91}, {"order_id": "BI-0259", "date": "2025-09-16", "month": "Sep", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 38.26, "units": 1, "discount": 0.036, "ad_spend": 5.0, "visits": 339, "delivery": 3, "rating": 4.65, "revenue": 34.47, "cost": 17.01, "profit": 7.52}, {"order_id": "BI-0260", "date": "2025-09-17", "month": "Sep", "region": "North", "segment": "Business Account", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 86.81, "units": 2, "discount": 0.099, "ad_spend": 65.82, "visits": 614, "delivery": 2, "rating": 4.45, "revenue": 161.6, "cost": 97.86, "profit": 22.74}, {"order_id": "BI-0261", "date": "2025-09-18", "month": "Sep", "region": "East", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 214.17, "units": 1, "discount": 0.014, "ad_spend": 10.56, "visits": 384, "delivery": 1, "rating": 4.59, "revenue": 215.21, "cost": 139.1, "profit": 67.9}, {"order_id": "BI-0262", "date": "2025-09-19", "month": "Sep", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Sports", "unit_price": 90.5, "units": 1, "discount": 0.036, "ad_spend": 65.41, "visits": 494, "delivery": 4, "rating": 4.06, "revenue": 86.25, "cost": 48.09, "profit": -7.42}, {"order_id": "BI-0263", "date": "2025-09-20", "month": "Sep", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 39.94, "units": 1, "discount": 0.087, "ad_spend": 57.96, "visits": 540, "delivery": 3, "rating": 3.86, "revenue": 34.89, "cost": 16.89, "profit": -21.08}, {"order_id": "BI-0264", "date": "2025-09-21", "month": "Sep", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 66.05, "units": 2, "discount": 0.111, "ad_spend": 18.73, "visits": 480, "delivery": 3, "rating": 4.72, "revenue": 122.39, "cost": 72.55, "profit": 32.33}, {"order_id": "BI-0265", "date": "2025-09-22", "month": "Sep", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 109.47, "units": 2, "discount": 0.107, "ad_spend": 100.08, "visits": 618, "delivery": 1, "rating": 4.64, "revenue": 186.8, "cost": 120.69, "profit": 8.67}, {"order_id": "BI-0266", "date": "2025-09-23", "month": "Sep", "region": "South", "segment": "Business Account", "channel": "Paid Ads", "category": "Beauty", "unit_price": 42.85, "units": 3, "discount": 0.096, "ad_spend": 95.14, "visits": 656, "delivery": 6, "rating": 4.29, "revenue": 118.66, "cost": 61.65, "profit": -9.72}, {"order_id": "BI-0267", "date": "2025-09-24", "month": "Sep", "region": "West", "segment": "Business Account", "channel": "Marketplace", "category": "Fashion", "unit_price": 69.1, "units": 2, "discount": 0.025, "ad_spend": 46.93, "visits": 434, "delivery": 3, "rating": 4.25, "revenue": 145.4, "cost": 71.99, "profit": 40.41}, {"order_id": "BI-0268", "date": "2025-09-25", "month": "Sep", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 196.43, "units": 2, "discount": 0.084, "ad_spend": 12.42, "visits": 422, "delivery": 2, "rating": 4.76, "revenue": 370.15, "cost": 280.82, "profit": 77.7}, {"order_id": "BI-0269", "date": "2025-09-26", "month": "Sep", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 53.98, "units": 3, "discount": 0.104, "ad_spend": 108.9, "visits": 733, "delivery": 2, "rating": 4.6, "revenue": 153.08, "cost": 78.62, "profit": 9.77}, {"order_id": "BI-0270", "date": "2025-09-27", "month": "Sep", "region": "Central", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 32.03, "units": 4, "discount": 0.119, "ad_spend": 114.72, "visits": 815, "delivery": 2, "rating": 4.48, "revenue": 112.92, "cost": 56.65, "profit": -11.62}, {"order_id": "BI-0271", "date": "2025-09-28", "month": "Sep", "region": "North", "segment": "Business Account", "channel": "Social Media", "category": "Fashion", "unit_price": 67.07, "units": 2, "discount": 0.116, "ad_spend": 89.46, "visits": 706, "delivery": 2, "rating": 4.01, "revenue": 117.29, "cost": 70.34, "profit": -7.06}, {"order_id": "BI-0272", "date": "2025-09-29", "month": "Sep", "region": "Central", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 203.86, "units": 1, "discount": 0.111, "ad_spend": 65.83, "visits": 614, "delivery": 4, "rating": 3.85, "revenue": 193.22, "cost": 137.75, "profit": 9.67}, {"order_id": "BI-0273", "date": "2025-09-30", "month": "Sep", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 73.39, "units": 2, "discount": 0.078, "ad_spend": 69.91, "visits": 625, "delivery": 3, "rating": 4.59, "revenue": 135.39, "cost": 78.08, "profit": 11.65}, {"order_id": "BI-0274", "date": "2025-10-01", "month": "Oct", "region": "Central", "segment": "New Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 88.92, "units": 1, "discount": 0.105, "ad_spend": 5.0, "visits": 293, "delivery": 3, "rating": 4.31, "revenue": 79.0, "cost": 53.94, "profit": 15.12}, {"order_id": "BI-0275", "date": "2025-10-02", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 99.25, "units": 1, "discount": 0.1, "ad_spend": 38.97, "visits": 489, "delivery": 3, "rating": 4.3, "revenue": 88.36, "cost": 53.35, "profit": 6.37}, {"order_id": "BI-0276", "date": "2025-10-03", "month": "Oct", "region": "North", "segment": "Business Account", "channel": "Email", "category": "Home & Kitchen", "unit_price": 95.54, "units": 1, "discount": 0.079, "ad_spend": 21.63, "visits": 377, "delivery": 3, "rating": 4.26, "revenue": 89.48, "cost": 56.54, "profit": 13.84}, {"order_id": "BI-0277", "date": "2025-10-04", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 102.1, "units": 2, "discount": 0.138, "ad_spend": 66.94, "visits": 665, "delivery": 2, "rating": 4.6, "revenue": 181.06, "cost": 121.69, "profit": 17.75}, {"order_id": "BI-0278", "date": "2025-10-05", "month": "Oct", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 214.69, "units": 2, "discount": 0.102, "ad_spend": 35.84, "visits": 539, "delivery": 1, "rating": 4.82, "revenue": 386.84, "cost": 291.35, "profit": 73.38}, {"order_id": "BI-0279", "date": "2025-10-06", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 84.49, "units": 2, "discount": 0.101, "ad_spend": 20.61, "visits": 531, "delivery": 4, "rating": 4.51, "revenue": 167.1, "cost": 96.55, "profit": 49.62}, {"order_id": "BI-0280", "date": "2025-10-07", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 246.75, "units": 2, "discount": 0.001, "ad_spend": 63.52, "visits": 553, "delivery": 3, "rating": 3.85, "revenue": 508.32, "cost": 335.12, "profit": 131.07}, {"order_id": "BI-0281", "date": "2025-10-08", "month": "Oct", "region": "East", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 240.03, "units": 1, "discount": 0.08, "ad_spend": 5.0, "visits": 361, "delivery": 3, "rating": 4.26, "revenue": 215.24, "cost": 158.17, "profit": 47.12}, {"order_id": "BI-0282", "date": "2025-10-09", "month": "Oct", "region": "Central", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 118.33, "units": 1, "discount": 0.113, "ad_spend": 28.33, "visits": 446, "delivery": 5, "rating": 4.04, "revenue": 104.24, "cost": 62.14, "profit": 14.52}, {"order_id": "BI-0283", "date": "2025-10-10", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 64.3, "units": 2, "discount": 0.148, "ad_spend": 41.99, "visits": 509, "delivery": 3, "rating": 3.91, "revenue": 107.8, "cost": 70.07, "profit": 7.44}, {"order_id": "BI-0284", "date": "2025-10-11", "month": "Oct", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 39.59, "units": 2, "discount": 0.112, "ad_spend": 82.94, "visits": 633, "delivery": 5, "rating": 4.0, "revenue": 70.36, "cost": 36.13, "profit": -23.39}, {"order_id": "BI-0285", "date": "2025-10-12", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Email", "category": "Beauty", "unit_price": 30.09, "units": 2, "discount": 0.081, "ad_spend": 35.17, "visits": 533, "delivery": 3, "rating": 4.58, "revenue": 51.01, "cost": 25.79, "profit": -1.33}, {"order_id": "BI-0286", "date": "2025-10-13", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 117.41, "units": 1, "discount": 0.028, "ad_spend": 21.43, "visits": 420, "delivery": 2, "rating": 4.06, "revenue": 108.61, "cost": 65.54, "profit": 26.48}, {"order_id": "BI-0287", "date": "2025-10-14", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Sports", "unit_price": 126.93, "units": 1, "discount": 0.004, "ad_spend": 5.0, "visits": 322, "delivery": 2, "rating": 4.45, "revenue": 120.26, "cost": 69.69, "profit": 43.02}, {"order_id": "BI-0288", "date": "2025-10-15", "month": "Oct", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 91.09, "units": 1, "discount": 0.044, "ad_spend": 15.82, "visits": 367, "delivery": 3, "rating": 4.59, "revenue": 86.59, "cost": 52.98, "profit": 17.71}, {"order_id": "BI-0289", "date": "2025-10-16", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 211.16, "units": 1, "discount": 0.06, "ad_spend": 28.2, "visits": 482, "delivery": 3, "rating": 4.67, "revenue": 209.54, "cost": 144.74, "profit": 42.1}, {"order_id": "BI-0290", "date": "2025-10-17", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 81.18, "units": 5, "discount": 0.2, "ad_spend": 107.62, "visits": 829, "delivery": 2, "rating": 4.34, "revenue": 316.13, "cost": 231.51, "profit": 20.63}, {"order_id": "BI-0291", "date": "2025-10-18", "month": "Oct", "region": "South", "segment": "Business Account", "channel": "Email", "category": "Beauty", "unit_price": 30.4, "units": 3, "discount": 0.107, "ad_spend": 85.39, "visits": 713, "delivery": 3, "rating": 4.85, "revenue": 79.37, "cost": 40.78, "profit": -15.58}, {"order_id": "BI-0292", "date": "2025-10-19", "month": "Oct", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Sports", "unit_price": 115.24, "units": 1, "discount": 0.075, "ad_spend": 32.39, "visits": 417, "delivery": 3, "rating": 4.7, "revenue": 109.06, "cost": 63.24, "profit": 20.8}, {"order_id": "BI-0293", "date": "2025-10-20", "month": "Oct", "region": "West", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 31.87, "units": 2, "discount": 0.075, "ad_spend": 83.51, "visits": 636, "delivery": 4, "rating": 4.7, "revenue": 56.85, "cost": 29.15, "profit": -27.83}, {"order_id": "BI-0294", "date": "2025-10-21", "month": "Oct", "region": "South", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 103.61, "units": 3, "discount": 0.147, "ad_spend": 77.99, "visits": 607, "delivery": 3, "rating": 4.44, "revenue": 259.83, "cost": 177.28, "profit": 32.46}, {"order_id": "BI-0295", "date": "2025-10-22", "month": "Oct", "region": "West", "segment": "Business Account", "channel": "Social Media", "category": "Beauty", "unit_price": 33.19, "units": 2, "discount": 0.032, "ad_spend": 66.92, "visits": 581, "delivery": 3, "rating": 4.29, "revenue": 63.69, "cost": 30.18, "profit": -10.5}, {"order_id": "BI-0296", "date": "2025-10-23", "month": "Oct", "region": "Central", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 87.73, "units": 3, "discount": 0.114, "ad_spend": 93.22, "visits": 669, "delivery": 3, "rating": 4.34, "revenue": 226.33, "cost": 152.31, "profit": 15.54}, {"order_id": "BI-0297", "date": "2025-10-24", "month": "Oct", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Beauty", "unit_price": 37.04, "units": 2, "discount": 0.118, "ad_spend": 57.18, "visits": 584, "delivery": 3, "rating": 4.78, "revenue": 65.97, "cost": 32.02, "profit": -4.7}, {"order_id": "BI-0298", "date": "2025-10-25", "month": "Oct", "region": "Central", "segment": "Returning Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 90.9, "units": 1, "discount": 0.08, "ad_spend": 70.76, "visits": 554, "delivery": 4, "rating": 4.29, "revenue": 83.34, "cost": 53.27, "profit": -18.44}, {"order_id": "BI-0299", "date": "2025-10-26", "month": "Oct", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Sports", "unit_price": 99.3, "units": 2, "discount": 0.13, "ad_spend": 144.31, "visits": 972, "delivery": 2, "rating": 3.96, "revenue": 173.34, "cost": 102.07, "profit": -12.9}, {"order_id": "BI-0300", "date": "2025-10-27", "month": "Oct", "region": "North", "segment": "Business Account", "channel": "Paid Ads", "category": "Beauty", "unit_price": 32.6, "units": 4, "discount": 0.125, "ad_spend": 73.14, "visits": 741, "delivery": 1, "rating": 4.18, "revenue": 121.7, "cost": 59.33, "profit": 19.75}, {"order_id": "BI-0301", "date": "2025-10-28", "month": "Oct", "region": "South", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 89.1, "units": 1, "discount": 0.045, "ad_spend": 48.19, "visits": 425, "delivery": 4, "rating": 3.81, "revenue": 83.4, "cost": 54.22, "profit": -6.92}, {"order_id": "BI-0302", "date": "2025-10-29", "month": "Oct", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 203.39, "units": 1, "discount": 0.036, "ad_spend": 5.0, "visits": 330, "delivery": 2, "rating": 3.94, "revenue": 187.88, "cost": 141.35, "profit": 38.98}, {"order_id": "BI-0303", "date": "2025-10-30", "month": "Oct", "region": "East", "segment": "Business Account", "channel": "Marketplace", "category": "Fashion", "unit_price": 70.17, "units": 2, "discount": 0.092, "ad_spend": 50.78, "visits": 457, "delivery": 3, "rating": 3.78, "revenue": 119.23, "cost": 70.3, "profit": 13.81}, {"order_id": "BI-0304", "date": "2025-10-31", "month": "Oct", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 62.18, "units": 2, "discount": 0.044, "ad_spend": 61.44, "visits": 520, "delivery": 3, "rating": 4.2, "revenue": 120.8, "cost": 72.95, "profit": 6.86}, {"order_id": "BI-0305", "date": "2025-11-01", "month": "Nov", "region": "North", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 70.5, "units": 3, "discount": 0.148, "ad_spend": 50.99, "visits": 625, "delivery": 2, "rating": 4.14, "revenue": 182.8, "cost": 127.39, "profit": 22.57}, {"order_id": "BI-0306", "date": "2025-11-02", "month": "Nov", "region": "West", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 65.9, "units": 5, "discount": 0.152, "ad_spend": 96.23, "visits": 835, "delivery": 3, "rating": 4.68, "revenue": 278.9, "cost": 179.18, "profit": 39.6}, {"order_id": "BI-0307", "date": "2025-11-03", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Fashion", "unit_price": 61.82, "units": 3, "discount": 0.048, "ad_spend": 62.91, "visits": 643, "delivery": 1, "rating": 4.32, "revenue": 172.17, "cost": 93.64, "profit": 41.53}, {"order_id": "BI-0308", "date": "2025-11-04", "month": "Nov", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Fashion", "unit_price": 57.24, "units": 2, "discount": 0.072, "ad_spend": 90.69, "visits": 678, "delivery": 3, "rating": 3.99, "revenue": 107.19, "cost": 60.02, "profit": -9.91}, {"order_id": "BI-0309", "date": "2025-11-05", "month": "Nov", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 92.91, "units": 2, "discount": 0.076, "ad_spend": 15.43, "visits": 482, "delivery": 3, "rating": 4.22, "revenue": 166.15, "cost": 105.43, "profit": 45.04}, {"order_id": "BI-0310", "date": "2025-11-06", "month": "Nov", "region": "South", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 81.89, "units": 2, "discount": 0.054, "ad_spend": 75.1, "visits": 601, "delivery": 4, "rating": 4.03, "revenue": 153.44, "cost": 92.83, "profit": 9.71}, {"order_id": "BI-0311", "date": "2025-11-07", "month": "Nov", "region": "North", "segment": "New Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 36.6, "units": 5, "discount": 0.15, "ad_spend": 135.3, "visits": 949, "delivery": 3, "rating": 4.11, "revenue": 157.78, "cost": 83.08, "profit": -6.92}, {"order_id": "BI-0312", "date": "2025-11-08", "month": "Nov", "region": "West", "segment": "Returning Customer", "channel": "Marketplace", "category": "Beauty", "unit_price": 36.54, "units": 2, "discount": 0.104, "ad_spend": 72.16, "visits": 669, "delivery": 3, "rating": 4.61, "revenue": 61.44, "cost": 31.86, "profit": -17.3}, {"order_id": "BI-0313", "date": "2025-11-09", "month": "Nov", "region": "East", "segment": "Business Account", "channel": "Social Media", "category": "Fashion", "unit_price": 61.4, "units": 3, "discount": 0.047, "ad_spend": 73.54, "visits": 727, "delivery": 3, "rating": 4.1, "revenue": 190.95, "cost": 95.72, "profit": 47.58}, {"order_id": "BI-0314", "date": "2025-11-10", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 185.74, "units": 2, "discount": 0.069, "ad_spend": 34.44, "visits": 572, "delivery": 3, "rating": 4.23, "revenue": 346.52, "cost": 260.47, "profit": 59.9}, {"order_id": "BI-0315", "date": "2025-11-11", "month": "Nov", "region": "South", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 41.25, "units": 3, "discount": 0.12, "ad_spend": 76.76, "visits": 693, "delivery": 3, "rating": 4.49, "revenue": 106.03, "cost": 54.47, "profit": 2.14}, {"order_id": "BI-0316", "date": "2025-11-12", "month": "Nov", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Home & Kitchen", "unit_price": 82.76, "units": 1, "discount": 0.012, "ad_spend": 68.31, "visits": 628, "delivery": 3, "rating": 4.85, "revenue": 79.03, "cost": 43.61, "profit": -9.35}, {"order_id": "BI-0317", "date": "2025-11-13", "month": "Nov", "region": "South", "segment": "Returning Customer", "channel": "Email", "category": "Sports", "unit_price": 105.11, "units": 2, "discount": 0.123, "ad_spend": 50.49, "visits": 653, "delivery": 3, "rating": 4.14, "revenue": 181.16, "cost": 118.67, "profit": 27.52}, {"order_id": "BI-0318", "date": "2025-11-14", "month": "Nov", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 40.51, "units": 2, "discount": 0.0, "ad_spend": 29.94, "visits": 537, "delivery": 3, "rating": 4.32, "revenue": 81.57, "cost": 35.47, "profit": 22.44}, {"order_id": "BI-0319", "date": "2025-11-15", "month": "Nov", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 210.75, "units": 2, "discount": 0.141, "ad_spend": 92.98, "visits": 820, "delivery": 3, "rating": 4.13, "revenue": 350.19, "cost": 280.52, "profit": 11.34}, {"order_id": "BI-0320", "date": "2025-11-16", "month": "Nov", "region": "East", "segment": "New Customer", "channel": "Email", "category": "Electronics", "unit_price": 184.8, "units": 2, "discount": 0.146, "ad_spend": 23.38, "visits": 627, "delivery": 3, "rating": 4.32, "revenue": 311.93, "cost": 249.45, "profit": 42.42}, {"order_id": "BI-0321", "date": "2025-11-17", "month": "Nov", "region": "Central", "segment": "Returning Customer", "channel": "Organic Search", "category": "Beauty", "unit_price": 35.22, "units": 2, "discount": 0.013, "ad_spend": 18.72, "visits": 481, "delivery": 4, "rating": 4.05, "revenue": 69.11, "cost": 35.53, "profit": 13.69}, {"order_id": "BI-0322", "date": "2025-11-18", "month": "Nov", "region": "West", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 37.47, "units": 3, "discount": 0.16, "ad_spend": 71.7, "visits": 605, "delivery": 3, "rating": 4.99, "revenue": 91.28, "cost": 49.37, "profit": -4.73}, {"order_id": "BI-0323", "date": "2025-11-19", "month": "Nov", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 176.54, "units": 2, "discount": 0.043, "ad_spend": 78.21, "visits": 695, "delivery": 1, "rating": 4.51, "revenue": 322.38, "cost": 231.48, "profit": 45.49}, {"order_id": "BI-0324", "date": "2025-11-20", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Social Media", "category": "Sports", "unit_price": 95.86, "units": 1, "discount": 0.064, "ad_spend": 71.33, "visits": 646, "delivery": 3, "rating": 4.55, "revenue": 86.92, "cost": 54.95, "profit": -14.46}, {"order_id": "BI-0325", "date": "2025-11-21", "month": "Nov", "region": "North", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 200.74, "units": 2, "discount": 0.134, "ad_spend": 41.92, "visits": 587, "delivery": 4, "rating": 4.7, "revenue": 355.7, "cost": 263.42, "profit": 59.63}, {"order_id": "BI-0326", "date": "2025-11-22", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Beauty", "unit_price": 34.31, "units": 4, "discount": 0.111, "ad_spend": 58.26, "visits": 652, "delivery": 3, "rating": 5.0, "revenue": 120.73, "cost": 61.78, "profit": 19.71}, {"order_id": "BI-0327", "date": "2025-11-23", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 108.24, "units": 2, "discount": 0.089, "ad_spend": 50.41, "visits": 616, "delivery": 4, "rating": 4.77, "revenue": 210.69, "cost": 117.46, "profit": 55.91}, {"order_id": "BI-0328", "date": "2025-11-24", "month": "Nov", "region": "Central", "segment": "Returning Customer", "channel": "Email", "category": "Electronics", "unit_price": 220.01, "units": 3, "discount": 0.135, "ad_spend": 22.59, "visits": 592, "delivery": 3, "rating": 4.75, "revenue": 587.25, "cost": 433.72, "profit": 133.9}, {"order_id": "BI-0329", "date": "2025-11-25", "month": "Nov", "region": "East", "segment": "Business Account", "channel": "Organic Search", "category": "Electronics", "unit_price": 226.15, "units": 1, "discount": 0.047, "ad_spend": 24.07, "visits": 515, "delivery": 2, "rating": 4.06, "revenue": 217.38, "cost": 153.64, "profit": 45.7}, {"order_id": "BI-0330", "date": "2025-11-26", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 222.16, "units": 1, "discount": 0.035, "ad_spend": 15.18, "visits": 396, "delivery": 2, "rating": 4.85, "revenue": 224.0, "cost": 159.06, "profit": 51.8}, {"order_id": "BI-0331", "date": "2025-11-27", "month": "Nov", "region": "East", "segment": "Returning Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 101.14, "units": 2, "discount": 0.1, "ad_spend": 28.78, "visits": 503, "delivery": 2, "rating": 4.63, "revenue": 180.64, "cost": 106.3, "profit": 53.71}, {"order_id": "BI-0332", "date": "2025-11-28", "month": "Nov", "region": "East", "segment": "New Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 203.96, "units": 1, "discount": 0.117, "ad_spend": 63.04, "visits": 648, "delivery": 2, "rating": 4.92, "revenue": 185.89, "cost": 136.44, "profit": 9.97}, {"order_id": "BI-0333", "date": "2025-11-29", "month": "Nov", "region": "North", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 80.49, "units": 2, "discount": 0.134, "ad_spend": 32.65, "visits": 553, "delivery": 2, "rating": 4.96, "revenue": 141.85, "cost": 92.52, "profit": 26.57}, {"order_id": "BI-0334", "date": "2025-11-30", "month": "Nov", "region": "West", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 78.93, "units": 3, "discount": 0.025, "ad_spend": 39.73, "visits": 555, "delivery": 3, "rating": 4.52, "revenue": 234.05, "cost": 125.91, "profit": 79.09}, {"order_id": "BI-0335", "date": "2025-12-01", "month": "Dec", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 37.76, "units": 5, "discount": 0.089, "ad_spend": 74.43, "visits": 720, "delivery": 2, "rating": 4.15, "revenue": 167.07, "cost": 85.26, "profit": 36.08}, {"order_id": "BI-0336", "date": "2025-12-02", "month": "Dec", "region": "North", "segment": "New Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 224.32, "units": 2, "discount": 0.067, "ad_spend": 38.81, "visits": 493, "delivery": 4, "rating": 3.85, "revenue": 435.92, "cost": 311.25, "profit": 93.73}, {"order_id": "BI-0337", "date": "2025-12-03", "month": "Dec", "region": "South", "segment": "New Customer", "channel": "Paid Ads", "category": "Fashion", "unit_price": 73.75, "units": 3, "discount": 0.029, "ad_spend": 90.5, "visits": 733, "delivery": 3, "rating": 4.15, "revenue": 207.23, "cost": 105.97, "profit": 44.28}, {"order_id": "BI-0338", "date": "2025-12-04", "month": "Dec", "region": "West", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 74.52, "units": 2, "discount": 0.069, "ad_spend": 36.6, "visits": 533, "delivery": 4, "rating": 4.22, "revenue": 149.65, "cost": 87.51, "profit": 32.41}, {"order_id": "BI-0339", "date": "2025-12-05", "month": "Dec", "region": "North", "segment": "New Customer", "channel": "Email", "category": "Fashion", "unit_price": 63.6, "units": 2, "discount": 0.136, "ad_spend": 52.44, "visits": 663, "delivery": 3, "rating": 3.81, "revenue": 104.95, "cost": 70.25, "profit": -1.34}, {"order_id": "BI-0340", "date": "2025-12-06", "month": "Dec", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Sports", "unit_price": 135.67, "units": 4, "discount": 0.054, "ad_spend": 86.5, "visits": 763, "delivery": 4, "rating": 4.03, "revenue": 505.76, "cost": 295.52, "profit": 153.07}, {"order_id": "BI-0341", "date": "2025-12-07", "month": "Dec", "region": "Central", "segment": "Business Account", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 75.58, "units": 2, "discount": 0.012, "ad_spend": 43.06, "visits": 488, "delivery": 4, "rating": 4.29, "revenue": 143.24, "cost": 83.79, "profit": 26.17}, {"order_id": "BI-0342", "date": "2025-12-08", "month": "Dec", "region": "North", "segment": "Returning Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 196.56, "units": 4, "discount": 0.144, "ad_spend": 93.52, "visits": 849, "delivery": 2, "rating": 3.92, "revenue": 669.04, "cost": 548.62, "profit": 64.19}, {"order_id": "BI-0343", "date": "2025-12-09", "month": "Dec", "region": "South", "segment": "Returning Customer", "channel": "Organic Search", "category": "Electronics", "unit_price": 244.23, "units": 1, "discount": 0.063, "ad_spend": 25.61, "visits": 544, "delivery": 4, "rating": 3.85, "revenue": 219.69, "cost": 170.3, "profit": 25.7}, {"order_id": "BI-0344", "date": "2025-12-10", "month": "Dec", "region": "West", "segment": "New Customer", "channel": "Email", "category": "Beauty", "unit_price": 40.41, "units": 2, "discount": 0.062, "ad_spend": 34.04, "visits": 572, "delivery": 5, "rating": 4.54, "revenue": 78.29, "cost": 34.59, "profit": 12.97}, {"order_id": "BI-0345", "date": "2025-12-11", "month": "Dec", "region": "South", "segment": "New Customer", "channel": "Marketplace", "category": "Home & Kitchen", "unit_price": 74.01, "units": 1, "discount": 0.074, "ad_spend": 26.64, "visits": 493, "delivery": 4, "rating": 4.76, "revenue": 66.46, "cost": 42.55, "profit": -0.35}, {"order_id": "BI-0346", "date": "2025-12-12", "month": "Dec", "region": "West", "segment": "New Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 60.51, "units": 2, "discount": 0.081, "ad_spend": 58.81, "visits": 627, "delivery": 4, "rating": 4.25, "revenue": 108.51, "cost": 65.1, "profit": 1.47}, {"order_id": "BI-0347", "date": "2025-12-13", "month": "Dec", "region": "South", "segment": "Business Account", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 77.35, "units": 3, "discount": 0.06, "ad_spend": 5.29, "visits": 535, "delivery": 4, "rating": 4.03, "revenue": 220.27, "cost": 132.15, "profit": 75.61}, {"order_id": "BI-0348", "date": "2025-12-14", "month": "Dec", "region": "Central", "segment": "Returning Customer", "channel": "Social Media", "category": "Beauty", "unit_price": 38.27, "units": 3, "discount": 0.098, "ad_spend": 77.76, "visits": 656, "delivery": 5, "rating": 3.95, "revenue": 102.23, "cost": 54.85, "profit": -7.39}, {"order_id": "BI-0349", "date": "2025-12-15", "month": "Dec", "region": "East", "segment": "New Customer", "channel": "Paid Ads", "category": "Home & Kitchen", "unit_price": 63.05, "units": 3, "discount": 0.083, "ad_spend": 70.29, "visits": 758, "delivery": 2, "rating": 3.91, "revenue": 164.32, "cost": 112.76, "profit": 8.11}, {"order_id": "BI-0350", "date": "2025-12-16", "month": "Dec", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Sports", "unit_price": 106.54, "units": 3, "discount": 0.121, "ad_spend": 78.49, "visits": 713, "delivery": 5, "rating": 3.93, "revenue": 291.6, "cost": 180.76, "profit": 55.67}, {"order_id": "BI-0351", "date": "2025-12-17", "month": "Dec", "region": "West", "segment": "Business Account", "channel": "Organic Search", "category": "Sports", "unit_price": 114.2, "units": 1, "discount": 0.013, "ad_spend": 34.14, "visits": 507, "delivery": 3, "rating": 4.71, "revenue": 111.65, "cost": 63.23, "profit": 22.45}, {"order_id": "BI-0352", "date": "2025-12-18", "month": "Dec", "region": "North", "segment": "Returning Customer", "channel": "Social Media", "category": "Electronics", "unit_price": 209.81, "units": 2, "discount": 0.038, "ad_spend": 102.3, "visits": 777, "delivery": 2, "rating": 4.62, "revenue": 415.01, "cost": 295.9, "profit": 58.05}, {"order_id": "BI-0353", "date": "2025-12-19", "month": "Dec", "region": "South", "segment": "Returning Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 74.69, "units": 2, "discount": 0.0, "ad_spend": 70.38, "visits": 610, "delivery": 3, "rating": 4.78, "revenue": 145.27, "cost": 78.66, "profit": 20.71}, {"order_id": "BI-0354", "date": "2025-12-20", "month": "Dec", "region": "East", "segment": "New Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 91.57, "units": 2, "discount": 0.076, "ad_spend": 49.25, "visits": 648, "delivery": 3, "rating": 4.27, "revenue": 170.02, "cost": 94.8, "profit": 40.94}, {"order_id": "BI-0355", "date": "2025-12-21", "month": "Dec", "region": "North", "segment": "New Customer", "channel": "Social Media", "category": "Fashion", "unit_price": 77.81, "units": 2, "discount": 0.086, "ad_spend": 78.03, "visits": 749, "delivery": 3, "rating": 4.72, "revenue": 137.06, "cost": 74.02, "profit": 12.93}, {"order_id": "BI-0356", "date": "2025-12-22", "month": "Dec", "region": "West", "segment": "Business Account", "channel": "Paid Ads", "category": "Sports", "unit_price": 106.1, "units": 3, "discount": 0.145, "ad_spend": 97.68, "visits": 851, "delivery": 4, "rating": 4.8, "revenue": 267.14, "cost": 180.27, "profit": 23.55}, {"order_id": "BI-0357", "date": "2025-12-23", "month": "Dec", "region": "North", "segment": "Returning Customer", "channel": "Organic Search", "category": "Home & Kitchen", "unit_price": 93.86, "units": 3, "discount": 0.076, "ad_spend": 26.54, "visits": 521, "delivery": 3, "rating": 4.84, "revenue": 267.77, "cost": 163.57, "profit": 82.4}, {"order_id": "BI-0358", "date": "2025-12-24", "month": "Dec", "region": "North", "segment": "Returning Customer", "channel": "Email", "category": "Home & Kitchen", "unit_price": 73.37, "units": 2, "discount": 0.165, "ad_spend": 15.96, "visits": 543, "delivery": 3, "rating": 5.0, "revenue": 119.21, "cost": 83.47, "profit": 19.76}, {"order_id": "BI-0359", "date": "2025-12-25", "month": "Dec", "region": "South", "segment": "New Customer", "channel": "Marketplace", "category": "Sports", "unit_price": 109.45, "units": 1, "discount": 0.031, "ad_spend": 55.64, "visits": 553, "delivery": 4, "rating": 4.91, "revenue": 103.73, "cost": 61.85, "profit": 1.68}, {"order_id": "BI-0360", "date": "2025-12-26", "month": "Dec", "region": "North", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 67.44, "units": 2, "discount": 0.079, "ad_spend": 18.86, "visits": 479, "delivery": 1, "rating": 4.22, "revenue": 121.25, "cost": 73.87, "profit": 34.6}, {"order_id": "BI-0361", "date": "2025-12-27", "month": "Dec", "region": "North", "segment": "Business Account", "channel": "Email", "category": "Beauty", "unit_price": 34.51, "units": 4, "discount": 0.118, "ad_spend": 19.96, "visits": 597, "delivery": 2, "rating": 4.15, "revenue": 123.84, "cost": 61.15, "profit": 46.92}, {"order_id": "BI-0362", "date": "2025-12-28", "month": "Dec", "region": "South", "segment": "New Customer", "channel": "Paid Ads", "category": "Electronics", "unit_price": 169.11, "units": 3, "discount": 0.067, "ad_spend": 83.82, "visits": 749, "delivery": 4, "rating": 4.03, "revenue": 490.14, "cost": 360.73, "profit": 73.71}, {"order_id": "BI-0363", "date": "2025-12-29", "month": "Dec", "region": "Central", "segment": "Business Account", "channel": "Paid Ads", "category": "Sports", "unit_price": 117.37, "units": 3, "discount": 0.084, "ad_spend": 93.16, "visits": 759, "delivery": 4, "rating": 4.73, "revenue": 332.7, "cost": 187.29, "profit": 84.57}, {"order_id": "BI-0364", "date": "2025-12-30", "month": "Dec", "region": "East", "segment": "Business Account", "channel": "Social Media", "category": "Beauty", "unit_price": 34.77, "units": 3, "discount": 0.067, "ad_spend": 58.81, "visits": 585, "delivery": 2, "rating": 4.41, "revenue": 101.59, "cost": 47.42, "profit": 17.03}, {"order_id": "BI-0365", "date": "2025-12-31", "month": "Dec", "region": "East", "segment": "Returning Customer", "channel": "Email", "category": "Fashion", "unit_price": 73.42, "units": 2, "discount": 0.117, "ad_spend": 47.89, "visits": 659, "delivery": 3, "rating": 4.26, "revenue": 131.09, "cost": 78.29, "profit": 19.26}];
+
+// ── Regression coefficients (OLS, no train/test split)
+const REG = { intercept: -55.6511, ad: -0.9410, visits: 0.4258, units: 12.1494, discount: 154.8478 };
+
+function regPredict(ad, visits, units, discount) {
+  return REG.intercept + REG.ad*ad + REG.visits*visits + REG.units*units + REG.discount*discount;
+}
+
+// ── Colour palettes ───────────────────────────────────
+const BLUES   = ["#1e6fd9","#3d8ef5","#00b4d8","#0f2d5e","#5ba4fa","#93c5fd"];
+const GREENS  = ["#27ae60","#2ecc71","#1abc9c","#16a085","#a8e6cf","#52c788"];
+const REGIONS = { North:"#1e6fd9", South:"#e74c3c", East:"#27ae60", West:"#e67e22", Central:"#8e44ad" };
+const CATS    = { Electronics:"#1e6fd9", Sports:"#27ae60", "Home & Kitchen":"#e67e22", Fashion:"#8e44ad", Beauty:"#00b4d8" };
+const MONTHS  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ── Shared chart defaults ─────────────────────────────
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = "#6b7a99";
+Chart.defaults.plugins.legend.position = "bottom";
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.padding = 16;
+
+function tooltipConfig() {
+  return {
+    backgroundColor: "#0f2d5e",
+    titleColor: "#fff",
+    bodyColor: "rgba(255,255,255,0.85)",
+    cornerRadius: 8,
+    padding: 10,
+    displayColors: false
+  };
+}
+
+// ── Filter & aggregate ────────────────────────────────
+function getFiltered() {
+  const region   = document.getElementById("f-region").value;
+  const segment  = document.getElementById("f-segment").value;
+  const channel  = document.getElementById("f-channel").value;
+  const category = document.getElementById("f-category").value;
+  return DATA.filter(d =>
+    (!region   || d.region   === region)   &&
+    (!segment  || d.segment  === segment)  &&
+    (!channel  || d.channel  === channel)  &&
+    (!category || d.category === category)
+  );
+}
+
+function groupSum(rows, key, valKey) {
+  const m = {};
+  rows.forEach(r => { m[r[key]] = (m[r[key]] || 0) + r[valKey]; });
+  return m;
+}
+
+// ── Chart instances ───────────────────────────────────
+let charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// Monthly Revenue
+function buildMonthly(filtered) {
+  destroyChart("monthly");
+  const by = groupSum(filtered, "month", "revenue");
+  const vals = MONTHS.map(m => +(by[m] || 0).toFixed(2));
+  charts["monthly"] = new Chart(document.getElementById("chartMonthly"), {
+    type: "line",
+    data: {
+      labels: MONTHS,
+      datasets: [{
+        label: "Revenue (USD)",
+        data: vals,
+        borderColor: "#1e6fd9",
+        backgroundColor: "rgba(30,111,217,0.10)",
+        borderWidth: 2.5,
+        pointBackgroundColor: "#1e6fd9",
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => "Revenue: $" + ctx.parsed.y.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) }, ...tooltipConfig() } },
+      scales: {
+        x: { grid: { display: false }, title: { display: true, text: "Month", font: { size: 12, weight: "600" }, color: "#6b7a99" } },
+        y: { beginAtZero: true, ticks: { callback: v => "$" + (v/1000).toFixed(1)+"k" }, grid: { color: "#eef2fb" }, title: { display: true, text: "Revenue (USD)", font: { size: 12, weight: "600" }, color: "#6b7a99" } }
+      }
+    }
+  });
+}
+
+// Revenue by Category
+function buildCategory(filtered) {
+  destroyChart("category");
+  const by = groupSum(filtered, "category", "revenue");
+  const labels = Object.keys(by).sort((a,b) => by[b]-by[a]);
+  const vals = labels.map(l => +by[l].toFixed(2));
+  charts["category"] = new Chart(document.getElementById("chartCategory"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Revenue (USD)",
+        data: vals,
+        backgroundColor: labels.map(l => CATS[l] || "#1e6fd9"),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => "Revenue: $" + ctx.parsed.y.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) }, ...tooltipConfig() } },
+      scales: {
+        x: { grid: { display: false }, title: { display: true, text: "Product Category", font: { size: 12, weight: "600" }, color: "#6b7a99" } },
+        y: { beginAtZero: true, ticks: { callback: v => "$" + (v/1000).toFixed(1)+"k" }, grid: { color: "#eef2fb" }, title: { display: true, text: "Revenue (USD)", font: { size: 12, weight: "600" }, color: "#6b7a99" } }
+      }
+    }
+  });
+}
+
+// Profit by Region
+function buildRegion(filtered) {
+  destroyChart("region");
+  const by = groupSum(filtered, "region", "profit");
+  const labels = Object.keys(by).sort((a,b) => by[b]-by[a]);
+  const vals = labels.map(l => +by[l].toFixed(2));
+  charts["region"] = new Chart(document.getElementById("chartRegion"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Profit (USD)",
+        data: vals,
+        backgroundColor: labels.map(l => REGIONS[l] || "#1e6fd9"),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => "Profit: $" + ctx.parsed.y.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) }, ...tooltipConfig() } },
+      scales: {
+        x: { grid: { display: false }, title: { display: true, text: "Region", font: { size: 12, weight: "600" }, color: "#6b7a99" } },
+        y: { beginAtZero: true, ticks: { callback: v => "$" + v.toFixed(0) }, grid: { color: "#eef2fb" }, title: { display: true, text: "Profit (USD)", font: { size: 12, weight: "600" }, color: "#6b7a99" } }
+      }
+    }
+  });
+}
+
+// Revenue by Channel
+function buildChannel(filtered) {
+  destroyChart("channel");
+  const by = groupSum(filtered, "channel", "revenue");
+  const labels = Object.keys(by).sort((a,b) => by[b]-by[a]);
+  const vals = labels.map(l => +by[l].toFixed(2));
+  const total = vals.reduce((a, b) => a + b, 0);
+  charts["channel"] = new Chart(document.getElementById("chartChannel"), {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: BLUES,
+        borderWidth: 3,
+        borderColor: "#fff",
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "right" },
+        tooltip: { callbacks: { label: ctx => {
+          const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : "0.0";
+          return ` ${ctx.label}: $${ctx.parsed.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})} (${pct}%)`;
+        }}, ...tooltipConfig() }
+      }
+    }
+  });
+}
+
+// Scatter: Ad Spend or Visits vs Revenue
+let scatterMode = "ad";
+function buildScatter(mode) {
+  destroyChart("scatter");
+  scatterMode = mode;
+  const filtered = getFiltered();
+  const pts = filtered.map(d => ({
+    x: mode === "ad" ? d.ad_spend : d.visits,
+    y: d.revenue,
+    cat: d.category,
+    discount: d.discount
+  }));
+
+  // Regression line uses full-dataset means (model was fit on all 365 rows)
+  const xs = pts.length ? pts.map(p => p.x) : [0, 1];
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const lineXs = [minX, maxX];
+  const meanVisits  = DATA.reduce((a,d)=>a+d.visits,0)/DATA.length;
+  const meanAd      = DATA.reduce((a,d)=>a+d.ad_spend,0)/DATA.length;
+  const meanUnits   = DATA.reduce((a,d)=>a+d.units,0)/DATA.length;
+  const meanDiscount = DATA.reduce((a,d)=>a+d.discount,0)/DATA.length;
+
+  const lineYs = lineXs.map(x => {
+    if (mode === "ad") return regPredict(x, meanVisits, meanUnits, meanDiscount);
+    else return regPredict(meanAd, x, meanUnits, meanDiscount);
+  });
+
+  // One dataset per category for colour-coded legend
+  const catNames = [...new Set(DATA.map(d=>d.category))].sort();
+  const catDatasets = catNames.map(cat => ({
+    type: "scatter",
+    label: cat,
+    data: pts.filter(p => p.cat === cat).map(p => ({x:p.x, y:p.y, discount:p.discount})),
+    backgroundColor: (CATS[cat] || "#1e6fd9") + "99",
+    pointRadius: 5,
+    pointHoverRadius: 7
+  }));
+
+  catDatasets.push({
+    type: "line",
+    label: "Regression Line",
+    data: lineXs.map((x,i) => ({x, y:lineYs[i]})),
+    borderColor: "#e74c3c",
+    borderWidth: 2.5,
+    borderDash: [6,4],
+    pointRadius: 0,
+    fill: false
+  });
+
+  charts["scatter"] = new Chart(document.getElementById("chartScatter"), {
+    type: "scatter",
+    data: { datasets: catDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === "Regression Line") return null;
+              const xFmt = mode === "ad"
+                ? "$" + ctx.parsed.x.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
+                : ctx.parsed.x.toLocaleString();
+              const disc = (ctx.raw && ctx.raw.discount != null)
+                ? "  |  Discount: " + (ctx.raw.discount * 100).toFixed(1) + "%"
+                : "";
+              return ` ${ctx.dataset.label}  ${xFmt} → Revenue: $${ctx.parsed.y.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})}${disc}`;
+            }
+          },
+          ...tooltipConfig()
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: mode === "ad" ? "Ad Spend (USD)" : "Website Visits", font: { size: 12, weight: "600" }, color: "#6b7a99" },
+          ticks: { callback: v => mode === "ad" ? "$" + Number(v).toFixed(0) : Number(v).toLocaleString() },
+          grid: { color: "#eef2fb" }
+        },
+        y: {
+          title: { display: true, text: "Revenue (USD)", font: { size: 12, weight: "600" }, color: "#6b7a99" },
+          beginAtZero: true,
+          ticks: { callback: v => "$" + Number(v).toLocaleString("en-US", {minimumFractionDigits:0, maximumFractionDigits:0}) },
+          grid: { color: "#eef2fb" }
+        }
+      }
+    }
+  });
+}
+
+function switchScatter(mode) {
+  document.getElementById("btn-ad").classList.toggle("active", mode === "ad");
+  document.getElementById("btn-visits").classList.toggle("active", mode === "visits");
+  buildScatter(mode);
+}
+
+// Actual vs Predicted
+function buildActualPred() {
+  destroyChart("actpred");
+  const pts = DATA.map(d => ({
+    x: d.revenue,
+    y: regPredict(d.ad_spend, d.visits, d.units, d.discount),
+    cat: d.category
+  }));
+  const allVals = [...DATA.map(d=>d.revenue), ...pts.map(p=>p.y)];
+  const minV = Math.min(...allVals), maxV = Math.max(...allVals);
+
+  const catNames = [...new Set(DATA.map(d=>d.category))].sort();
+  const catDatasets = catNames.map(cat => ({
+    type: "scatter",
+    label: cat,
+    data: pts.filter(p=>p.cat===cat).map(p=>({x:p.x,y:p.y})),
+    backgroundColor: (CATS[cat] || "#1e6fd9") + "99",
+    pointRadius: 4,
+    pointHoverRadius: 6
+  }));
+
+  catDatasets.push({
+    type: "line",
+    label: "Perfect Fit (y=x)",
+    data: [{x:minV,y:minV},{x:maxV,y:maxV}],
+    borderColor: "#0f2d5e",
+    borderWidth: 2,
+    borderDash: [5,4],
+    pointRadius: 0,
+    fill: false
+  });
+
+  charts["actpred"] = new Chart(document.getElementById("chartActualPred"), {
+    type: "scatter",
+    data: { datasets: catDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === "Perfect Fit (y=x)") return null;
+              return ` ${ctx.dataset.label}  Actual: $${ctx.parsed.x.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})}  |  Predicted: $${ctx.parsed.y.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            }
+          },
+          ...tooltipConfig()
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: "Actual Revenue (USD)", font: { weight: "600" } }, ticks: { callback: v => "$"+v.toFixed(0) }, grid: { color: "#eef2fb" } },
+        y: { title: { display: true, text: "Predicted Revenue (USD)", font: { weight: "600" } }, ticks: { callback: v => "$"+v.toFixed(0) }, grid: { color: "#eef2fb" } }
+      }
+    }
+  });
+}
+
+// ── Filter actions ────────────────────────────────────
+function applyFilters() {
+  const f = getFiltered();
+  buildMonthly(f);
+  buildCategory(f);
+  buildRegion(f);
+  buildChannel(f);
+  buildScatter(scatterMode);
+}
+
+function resetFilters() {
+  ["f-region","f-segment","f-channel","f-category"].forEach(id => document.getElementById(id).value = "");
+  applyFilters();
+}
+
+// ── Predictor ─────────────────────────────────────────
+function runPredictor() {
+  const ad  = parseFloat(document.getElementById("i-adspend").value) || 0;
+  const vis = parseFloat(document.getElementById("i-visits").value)  || 0;
+  const un  = parseFloat(document.getElementById("i-units").value)   || 1;
+  const dis = parseFloat(document.getElementById("i-discount").value)|| 0;
+  const pred = regPredict(ad, vis, un, dis);
+  const el = document.getElementById("pred-result");
+  document.getElementById("pred-val").textContent = "$" + Math.max(0, pred).toFixed(2);
+  el.classList.add("show");
+}
+
+// ── Sidebar active state ──────────────────────────────
+function setActive(el) {
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  el.classList.add("active");
+}
+
+// Intersection observer for sidebar highlighting
+const sections = ["overview","analytics","scatter","forecast","insights"];
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      document.querySelectorAll(".nav-item").forEach(n => {
+        n.classList.toggle("active", n.getAttribute("href") === "#" + id);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(id => { const el = document.getElementById(id); if(el) obs.observe(el); });
+
+// ── Init ──────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  applyFilters();
+  buildScatter("ad");
+  buildActualPred();
+});
+</script>
+
+</body>
+</html>
