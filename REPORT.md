@@ -19,19 +19,22 @@
 ## Platform Screenshots
 
 ### Overview — KPI Cards and Business Problem
-![Overview](screenshots/01_overview_live.png)
+![Overview](screenshots/screenshot_1.png)
 
 ### Sales Analytics — Filterable Charts
-![Sales Analytics](screenshots/02_analytics_live.png)
+![Sales Analytics](screenshots/screenshot_2.png)
+![Sales Analytics](screenshots/screenshot_3.png)
 
 ### Marketing Impact — Ad Spend and Website Visits vs. Revenue
-![Marketing Scatter](screenshots/03_scatter_live.png)
+![Marketing Scatter](screenshots/screenshot_4.png)
 
 ### Regression Forecast — Equation, Coefficients, and Predictor Tool
-![Regression Forecast](screenshots/04_forecast_live.png)
+![Regression Forecast](screenshots/screenshot_5.png)
+![Regression Forecast](screenshots/screenshot_6.png)
+![Regression Forecast](screenshots/screenshot_7.png)
 
 ### Regression Interpretation — Variable-by-Variable Panel
-![Business Insights](screenshots/05_insights_live.png)
+![Business Insights](screenshots/screenshot_8.png)
 
 ---
 
